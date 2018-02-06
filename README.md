@@ -1,2 +1,9 @@
-# emqx-ct-helper
-EMQ X Common Test Helper
+
+# emqx-ct-helpers
+
+EMQ X Common Test Helpers
+
+## Author
+
+EMQ X Team.
+
