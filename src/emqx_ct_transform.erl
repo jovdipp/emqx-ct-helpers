@@ -18,6 +18,7 @@
 
 -export([parse_transform/2]).
 
+%% @private
 parse_transform(AST, _Options) ->
     walk_ast(AST, []).
 
