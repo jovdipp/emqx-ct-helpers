@@ -25,7 +25,7 @@
 -export([start_link/0, stop/0]).
 -export([messages/0, messages/1]).
 -export([subscribe/1, subscribe/2, subscribe/3, subscribe/4]).
--export([publish/2]).
+-export([publish/1, publish/2]).
 -export([unsubscribe/1, unsubscribe/2]).
 
 %% gen_server Function Exports
@@ -61,6 +61,9 @@ subscribe(Topic, Subscriber, Options, Timeout) ->
     {Topic1, Options1} = emqx_topic:parse(Topic, Options),
     SubReq = {subscribe, Topic1, with_subpid(Subscriber), Options1},
     gen_server:call(?MODULE, SubReq, Timeout).
+
+publish(#message{topic = Topic, payload = Payload}) ->
+    publish(Topic, Payload).
 
 publish(Topic, Payload) ->
     lists:foreach(
