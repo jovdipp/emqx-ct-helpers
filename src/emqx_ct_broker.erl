@@ -27,6 +27,7 @@
 -export([subscribe/1, subscribe/2, subscribe/3, subscribe/4]).
 -export([publish/1, publish/2]).
 -export([unsubscribe/1, unsubscribe/2]).
+-export([topics/0, subscribers/1]).
 
 %% gen_server Function Exports
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
