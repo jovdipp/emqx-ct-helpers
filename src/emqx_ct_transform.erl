@@ -47,8 +47,14 @@ walk_body([H|T], Acc) ->
 
 do_transform({call, Line, {remote, Line1, {atom, Line2, emqx_broker},
                            {atom, Line3, Function}}, Arguments0}) ->
+    io:format("Transform emqx_broker:~s !!!!~n", [Function]),
     {call, Line, {remote, Line1, {atom, Line2, emqx_ct_broker},
                   {atom, Line3, Function}}, Arguments0};
+do_transform(Stmt) when is_tuple(Stmt) ->
+    list_to_tuple(do_transform(tuple_to_list(Stmt)));
+do_transform(Stmt) when is_list(Stmt) ->
+    [do_transform(S) || S <- Stmt];
 do_transform(Stmt) ->
     Stmt.
+
 
