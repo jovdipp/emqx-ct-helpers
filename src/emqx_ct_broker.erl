@@ -22,7 +22,7 @@
 -include_lib("emqx/include/emqx_mqtt.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([start_link/0, stop/0]).
+-export([start/0, start_link/0, stop/0]).
 -export([messages/0, messages/1]).
 -export([subscribe/1, subscribe/2, subscribe/3, subscribe/4]).
 -export([publish/1, publish/2]).
@@ -37,6 +37,9 @@
 -define(LOG(Format, Args), ct:print("CT_BROKER: " ++ Format, Args)).
 
 -record(state, {}).
+
+start() ->
+    gen_server:start({local, ?MODULE}, ?MODULE, [], []).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
