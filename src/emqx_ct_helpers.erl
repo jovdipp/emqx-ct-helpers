@@ -18,4 +18,11 @@
 
 -include_lib("common_test/include/ct.hrl").
 
+-export([ensure_broker_started/0, ensure_broker_stopped/0]).
+
+ensure_broker_started() ->
+    {ok, _} = emqx_ct_broker:start_link(), ok.
+
+ensure_broker_stopped() ->
+    emqx_ct_broker:stop().
 
