@@ -20,7 +20,7 @@
 
 %% @private
 parse_transform(AST, Options) ->
-    io:format("Options: ~p~n", [Options]),
+    [put({mock_module, Orig}, Mock) || {mock_module, Orig, Mock} <- Options],
     walk_ast(AST, []).
 
 walk_ast([], Acc) ->
@@ -46,16 +46,13 @@ walk_body([], Acc) ->
 walk_body([H|T], Acc) ->
     walk_body(T, [do_transform(H)|Acc]).
 
-do_transform({call, Line, {remote, Line1, {atom, Line2, emqx_broker},
-                           {atom, Line3, Function}}, Arguments0}) ->
-    io:format("Transform emqx_broker:~s !!!!~n", [Function]),
-    {call, Line, {remote, Line1, {atom, Line2, emqx_ct_broker},
-                  {atom, Line3, Function}}, Arguments0};
-do_transform({call, Line, {remote, Line1, {atom, Line2, emqx_access_control},
-                           {atom, Line3, Function}}, Arguments0}) ->
-    io:format("Transform emqx_access_control:~s !!!!~n", [Function]),
-    {call, Line, {remote, Line1, {atom, Line2, emqx_ct_access_control},
-                  {atom, Line3, Function}}, Arguments0};
+do_transform(Stmt = {call, Line, {remote, Line1, {atom, Line2, Mod},
+                                  {atom, Line3, Function}}, Arguments0}) ->
+    case get({mock_module, Mod}) of
+        undefined -> Stmt;
+        Mock -> {call, Line, {remote, Line1, {atom, Line2, Mock},
+                              {atom, Line3, Function}}, Arguments0}
+    end;
 do_transform(Stmt) when is_tuple(Stmt) ->
     list_to_tuple(do_transform(tuple_to_list(Stmt)));
 do_transform(Stmt) when is_list(Stmt) ->
