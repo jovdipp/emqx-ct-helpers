@@ -66,10 +66,10 @@ subscribe(Topic, Subscriber, Options, Timeout) ->
     SubReq = {subscribe, Topic1, with_subpid(Subscriber), Options1},
     gen_server:call(?MODULE, SubReq, Timeout).
 
-publish(#message{topic = Topic, payload = Payload}) ->
-    publish(Topic, Payload).
+publish(Topic, Payload) when is_binary(Topic), is_binary(Payload) ->
+    publish(emqx_message:make(Topic, Payload)).
 
-publish(Topic, Payload) ->
+publish(#message{topic = Topic, payload = Payload}) ->
     lists:foreach(
       fun({To, {_SubId, SubPid}}) ->
               SubPid ! {dispatch, To, #message{payload = Payload}};
