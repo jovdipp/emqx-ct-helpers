@@ -19,7 +19,8 @@
 -export([parse_transform/2]).
 
 %% @private
-parse_transform(AST, _Options) ->
+parse_transform(AST, Options) ->
+    io:format("Options: ~p~n", [Options]),
     walk_ast(AST, []).
 
 walk_ast([], Acc) ->
@@ -50,11 +51,15 @@ do_transform({call, Line, {remote, Line1, {atom, Line2, emqx_broker},
     io:format("Transform emqx_broker:~s !!!!~n", [Function]),
     {call, Line, {remote, Line1, {atom, Line2, emqx_ct_broker},
                   {atom, Line3, Function}}, Arguments0};
+do_transform({call, Line, {remote, Line1, {atom, Line2, emqx_access_control},
+                           {atom, Line3, Function}}, Arguments0}) ->
+    io:format("Transform emqx_access_control:~s !!!!~n", [Function]),
+    {call, Line, {remote, Line1, {atom, Line2, emqx_ct_access_control},
+                  {atom, Line3, Function}}, Arguments0};
 do_transform(Stmt) when is_tuple(Stmt) ->
     list_to_tuple(do_transform(tuple_to_list(Stmt)));
 do_transform(Stmt) when is_list(Stmt) ->
     [do_transform(S) || S <- Stmt];
 do_transform(Stmt) ->
     Stmt.
-
 
