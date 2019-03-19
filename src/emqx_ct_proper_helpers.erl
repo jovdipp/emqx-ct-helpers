@@ -14,13 +14,18 @@
 %%% limitations under the License.
 %%%===================================================================
 
--module(emqx_ct_access_control).
+-module(emqx_ct_proper_helpers).
 
--export([auth/2, check_acl/3]).
+-include_lib("common_test/include/ct.hrl").
+-include_lib("proper/include/proper.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
-auth(_Client, _Password) ->
-    ok.
+-export([run_proper/3]).
 
-check_acl(_Client, _PubSub, _Topic) ->
-    allow.
-
+run_proper(Fun, Args, NumTests) ->
+    ?assertEqual(
+       true,
+       proper:counterexample(erlang:apply(Fun, Args),
+			     [{numtests, NumTests},
+			      {on_output, fun(".", _) -> ok;
+					     (F, A) -> ct:pal(?LOW_IMPORTANCE, F, A) end}])).
