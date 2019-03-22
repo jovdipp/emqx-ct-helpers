@@ -10,4 +10,5 @@ rel/example_project
 .rebar
 .erlang.mk/
 emqx_ct_helpers.d
-
+_build/
+erlang.mk
