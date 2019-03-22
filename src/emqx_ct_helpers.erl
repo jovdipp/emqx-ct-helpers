@@ -30,10 +30,17 @@ set_config(Config) when is_list(Config) ->
     set_config(Config, []).
 
 set_config([{App, SchemaPath, ConfPath} | ConfigInfo], Acc) ->
-    set_config(ConfigInfo, [{App, path(App, SchemaPath), path(App, ConfPath)} | Acc]);
+    set_config(ConfigInfo, [{App, path(SchemaPath), path(ConfPath)} | Acc]);
 set_config([], Acc) ->
     Acc.
 
+path(RelativePath) ->
+    path(undefined, RelativePath).
+
+path(undefined, RelativePath) ->
+    PluginDepsPath = plugin_dep_dir(),
+    PluginPath = filename:dirname(PluginDepsPath),
+    filename:join([PluginPath, RelativePath]);
 path(App, RelativePath) ->
     PluginDepsPath = plugin_dep_dir(),
     PluginPath = filename:dirname(PluginDepsPath),
@@ -52,7 +59,6 @@ get_base_dir(App) ->
 
 run_setup_steps(Config, Opts)when is_list(Config) ->
     [start_app(App, {SchemaFile, ConfigFile}, Opts) || {App, SchemaFile, ConfigFile} <- Config].
-
 
 start_apps(Apps) ->
     start_apps(Apps, []).
@@ -84,7 +90,7 @@ read_schema_configs(App, {SchemaFile, ConfigFile}) ->
 set_special_configs(emqx, Opts) when is_list(Opts) ->
     case Opts of
         [] -> ok;
-        Opts -> [application:set_env(emqx, plugins_etc_dir, path(App, Dir)) || {App, Dir} <- Opts]
+        Opts -> [application:set_env(emqx, Par, path(App, Dir)) || {Par, App, Dir} <- Opts]
     end;
 set_special_configs(_App, _Opts) ->
     ok.
