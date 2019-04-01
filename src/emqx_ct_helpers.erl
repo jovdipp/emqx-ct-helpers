@@ -18,21 +18,21 @@
 
 -include_lib("common_test/include/ct.hrl").
 
--export([set_config/1,
-         run_setup_steps/2,
-         reload/2,
-         start_apps/1,
-         start_apps/2,
-         stop_apps/1
+-export([ set_config/1
+        , run_setup_steps/2
+        , reload/2
+        , start_apps/1
+        , start_apps/2
+        , stop_apps/1
         ]).
 
 set_config(Config) when is_list(Config) ->
     set_config(Config, []).
 
-set_config([{App, SchemaPath, ConfPath} | ConfigInfo], Acc) ->
-    set_config(ConfigInfo, [{App, path(SchemaPath), path(ConfPath)} | Acc]);
 set_config([], Acc) ->
-    Acc.
+    Acc;
+set_config([{App, SchemaPath, ConfPath} | ConfigInfo], Acc) ->
+    set_config(ConfigInfo, [{App, path(SchemaPath), path(ConfPath)} | Acc]).
 
 path(RelativePath) ->
     path(undefined, RelativePath).
@@ -57,7 +57,7 @@ get_base_dir(App) ->
     {file, Here} = code:is_loaded(App),
     filename:dirname(filename:dirname(Here)).
 
-run_setup_steps(Config, Opts)when is_list(Config) ->
+run_setup_steps(Config, Opts) when is_list(Config) ->
     [start_app(App, {SchemaFile, ConfigFile}, Opts) || {App, SchemaFile, ConfigFile} <- Config].
 
 start_apps(Apps) ->
