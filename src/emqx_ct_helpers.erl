@@ -26,6 +26,7 @@
         , start_apps/2
         , stop_apps/1
         , reload/2
+        , deps_path/2
         ]).
 
 -spec(start_apps(Apps :: apps())
