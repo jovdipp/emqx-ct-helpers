@@ -18,68 +18,59 @@
 
 -include_lib("common_test/include/ct.hrl").
 
--export([set_config/1,
-         run_setup_steps/2,
-         reload/2,
-         start_apps/1,
-         start_apps/2,
-         stop_apps/1
+-type(special_config_handler() :: {atom(), fun()}).
+-type(special_config_handlers() :: list(special_config_handler())).
+-type(apps() :: list(atom())).
+
+-export([ start_apps/1
+        , start_apps/2
+        , stop_apps/1
+        , reload/2
+        , deps_path/2
         ]).
 
-set_config(Config) when is_list(Config) ->
-    set_config(Config, []).
-
-set_config([{App, SchemaPath, ConfPath} | ConfigInfo], Acc) ->
-    set_config(ConfigInfo, [{App, path(SchemaPath), path(ConfPath)} | Acc]);
-set_config([], Acc) ->
-    Acc.
-
-path(RelativePath) ->
-    path(undefined, RelativePath).
-
-path(undefined, RelativePath) ->
-    PluginDepsPath = plugin_dep_dir(),
-    PluginPath = filename:dirname(PluginDepsPath),
-    filename:join([PluginPath, RelativePath]);
-path(App, RelativePath) ->
-    PluginDepsPath = plugin_dep_dir(),
-    PluginPath = filename:dirname(PluginDepsPath),
-    CurrentPluginPathNmae = filename:basename(PluginPath),
-    case l2b(CurrentPluginPathNmae) =:= App of
-        true -> filename:join([PluginPath, RelativePath]);
-        false -> filename:join([PluginDepsPath, App, RelativePath])
-    end.
-
-plugin_dep_dir() ->
-    filename:dirname(get_base_dir(?MODULE)).
-
-get_base_dir(App) ->
-    {file, Here} = code:is_loaded(App),
-    filename:dirname(filename:dirname(Here)).
-
-run_setup_steps(Config, Opts)when is_list(Config) ->
-    [start_app(App, {SchemaFile, ConfigFile}, Opts) || {App, SchemaFile, ConfigFile} <- Config].
-
+-spec(start_apps(Apps :: apps()) -> ok).
 start_apps(Apps) ->
     start_apps(Apps, []).
 
-start_apps([], _Opts) ->
-    ok;
-start_apps([App | LeftApps], Opts) ->
-    SchemaFile = path(App, filename:join(["priv", atom_to_list(App) ++ ".schema"])),
-    ConfigFile = path(App, filename:join(["etc", atom_to_list(App) ++ ".conf"])),
-    start_app(App, {SchemaFile, ConfigFile}, Opts),
-    start_apps(LeftApps, Opts).
+-spec(start_apps(Apps :: apps(),
+                 SpecAppConfigs :: special_config_handlers()) -> ok).
+start_apps(Apps, SpecAppConfigs) ->
+    GenSpecAppConfigsHandler
+        = fun(App) ->
+              case proplists:get_value(App, SpecAppConfigs) of
+                  undefined -> fun() -> ok end;
+                  SpecAppConfigHandler0 -> SpecAppConfigHandler0
+              end
+          end,
+    [start_app(App, GenSpecAppConfigsHandler(App)) || App <- [emqx| Apps]],
+    ok.
+
+start_app(App, SpecAppConfigHandler) ->
+    start_app(App,
+              deps_path(App, filename:join(["priv", atom_to_list(App) ++ ".schema"])),
+              deps_path(App, filename:join(["etc", atom_to_list(App) ++ ".conf"])),
+              SpecAppConfigHandler).
 
 stop_apps(Apps) ->
     [application:stop(App) || App <- Apps].
 
-start_app(App, {SchemaFile, ConfigFile}, Opts) ->
-    read_schema_configs(App, {SchemaFile, ConfigFile}),
-    set_special_configs(App, Opts),
+start_app(App, SchemaFile, ConfigFile, SpecAppConfig) ->
+    read_schema_configs(App, SchemaFile, ConfigFile),
+    SpecAppConfig(),
     application:ensure_all_started(App).
 
-read_schema_configs(App, {SchemaFile, ConfigFile}) ->
+deps_path(App, RelativePath) ->
+    %% Note: not lib_dir because etc dir is not sym-link-ed to _build dir
+    %% but priv dir is
+    Path0 = code:priv_dir(App),
+    Path = case file:read_link(Path0) of
+               {ok, Resolved} -> Resolved;
+               {error, _} -> Path0
+           end,
+    filename:join([Path, "..", RelativePath]).
+
+read_schema_configs(App, SchemaFile, ConfigFile) ->
     ct:pal("Read configs - SchemaFile: ~p, ConfigFile: ~p", [SchemaFile, ConfigFile]),
     Schema = cuttlefish_schema:files([SchemaFile]),
     Conf = conf_parse:file(ConfigFile),
@@ -87,27 +78,8 @@ read_schema_configs(App, {SchemaFile, ConfigFile}) ->
     Vals = proplists:get_value(App, NewConfig, []),
     [application:set_env(App, Par, Value) || {Par, Value} <- Vals].
 
-set_special_configs(emqx, Opts) when is_list(Opts) ->
-    case Opts of
-        [] -> ok;
-        Opts -> [application:set_env(emqx, Par, path(App, Dir)) || {Par, App, Dir} <- Opts]
-    end;
-set_special_configs(_App, _Opts) ->
-    ok.
-
-reload(APP, {Par, Vals}) when is_atom(APP), is_list(Vals) ->
-    application:stop(APP),
-    {ok, TupleVals} = application:get_env(APP, Par),
-    NewVals = lists:filtermap(fun({K, V}) ->
-                                  case lists:keymember(K, 1, Vals) of
-                                      false -> {true, {K, V}};
-                                      _ -> false
-                                  end
-                              end, TupleVals),
-    application:set_env(APP, Par, lists:append(NewVals, Vals)),
-    application:start(APP).
-
-l2b(L) when is_list(L) ->
-    list_to_atom(L);
-l2b(L) ->
-    L.
+-spec(reload(App :: atom(), SpecAppConfig :: special_config_handler()) -> ok).
+reload(App, SpecAppConfigHandler) ->
+    application:stop(App),
+    start_app(App, SpecAppConfigHandler),
+    application:start(App).

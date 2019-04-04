@@ -12,3 +12,4 @@ rel/example_project
 emqx_ct_helpers.d
 _build/
 erlang.mk
+rebar.lock
