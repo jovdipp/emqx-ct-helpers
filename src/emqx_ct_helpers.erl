@@ -29,14 +29,12 @@
         , deps_path/2
         ]).
 
--spec(start_apps(Apps :: apps())
-      -> ok).
+-spec(start_apps(Apps :: apps()) -> ok).
 start_apps(Apps) ->
     start_apps(Apps, []).
 
 -spec(start_apps(Apps :: apps(),
-                 SpecAppConfigs :: special_config_handlers())
-      -> ok).
+                 SpecAppConfigs :: special_config_handlers()) -> ok).
 start_apps(Apps, SpecAppConfigs) ->
     GenSpecAppConfigsHandler
         = fun(App) ->
