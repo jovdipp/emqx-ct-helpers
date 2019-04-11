@@ -18,8 +18,8 @@
 
 -include_lib("common_test/include/ct.hrl").
 
--type(special_config_handler() :: {atom(), fun()}).
--type(special_config_handlers() :: list(special_config_handler())).
+-type(special_config_handler() :: fun()).
+
 -type(apps() :: list(atom())).
 
 -export([ start_apps/1
@@ -29,36 +29,43 @@
         , deps_path/2
         ]).
 
+%%------------------------------------------------------------------------------
+%% APIs
+%%------------------------------------------------------------------------------
+
 -spec(start_apps(Apps :: apps()) -> ok).
 start_apps(Apps) ->
-    start_apps(Apps, []).
+    start_apps(Apps, fun(_) -> ok end).
 
--spec(start_apps(Apps :: apps(),
-                 SpecAppConfigs :: special_config_handlers()) -> ok).
-start_apps(Apps, SpecAppConfigs) ->
-    GenSpecAppConfigsHandler
-        = fun(App) ->
-              case proplists:get_value(App, SpecAppConfigs) of
-                  undefined -> fun() -> ok end;
-                  SpecAppConfigHandler0 -> SpecAppConfigHandler0
-              end
-          end,
-    [start_app(App, GenSpecAppConfigsHandler(App)) || App <- [emqx| Apps]],
+-spec(start_apps(Apps :: apps(), Handler :: special_config_handler()) -> ok).
+start_apps(Apps, Handler) when is_function(Handler) ->
+    [start_app(App, Handler) || App <- [emqx | Apps]],
     ok.
 
-start_app(App, SpecAppConfigHandler) ->
+%% @private
+start_app(App, Handler) ->
     start_app(App,
               deps_path(App, filename:join(["priv", atom_to_list(App) ++ ".schema"])),
               deps_path(App, filename:join(["etc", atom_to_list(App) ++ ".conf"])),
-              SpecAppConfigHandler).
-
-stop_apps(Apps) ->
-    [application:stop(App) || App <- Apps].
-
+              Handler).
+%% @private
 start_app(App, SchemaFile, ConfigFile, SpecAppConfig) ->
     read_schema_configs(App, SchemaFile, ConfigFile),
-    SpecAppConfig(),
+    SpecAppConfig(App),
     application:ensure_all_started(App).
+
+%% @private
+read_schema_configs(App, SchemaFile, ConfigFile) ->
+    ct:pal("Read configs - SchemaFile: ~p, ConfigFile: ~p", [SchemaFile, ConfigFile]),
+    Schema = cuttlefish_schema:files([SchemaFile]),
+    Conf = conf_parse:file(ConfigFile),
+    NewConfig = cuttlefish_generator:map(Schema, Conf),
+    Vals = proplists:get_value(App, NewConfig, []),
+    [application:set_env(App, Par, Value) || {Par, Value} <- Vals].
+
+-spec(stop_apps(list()) -> ok).
+stop_apps(Apps) ->
+    [application:stop(App) || App <- Apps ++ [emqx]].
 
 deps_path(App, RelativePath) ->
     %% Note: not lib_dir because etc dir is not sym-link-ed to _build dir
@@ -70,16 +77,9 @@ deps_path(App, RelativePath) ->
            end,
     filename:join([Path, "..", RelativePath]).
 
-read_schema_configs(App, SchemaFile, ConfigFile) ->
-    ct:pal("Read configs - SchemaFile: ~p, ConfigFile: ~p", [SchemaFile, ConfigFile]),
-    Schema = cuttlefish_schema:files([SchemaFile]),
-    Conf = conf_parse:file(ConfigFile),
-    NewConfig = cuttlefish_generator:map(Schema, Conf),
-    Vals = proplists:get_value(App, NewConfig, []),
-    [application:set_env(App, Par, Value) || {Par, Value} <- Vals].
-
 -spec(reload(App :: atom(), SpecAppConfig :: special_config_handler()) -> ok).
 reload(App, SpecAppConfigHandler) ->
     application:stop(App),
     start_app(App, SpecAppConfigHandler),
     application:start(App).
+
