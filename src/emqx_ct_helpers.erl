@@ -39,6 +39,9 @@ start_apps(Apps) ->
 
 -spec(start_apps(Apps :: apps(), Handler :: special_config_handler()) -> ok).
 start_apps(Apps, Handler) when is_function(Handler) ->
+    %% Load all application code to beam vm first
+    %% Becasue, minirest, ekka etc.. application will scan these modules
+    [application:load(App) || App <- Apps],
     [start_app(App, Handler) || App <- [emqx | Apps]],
     ok.
 
