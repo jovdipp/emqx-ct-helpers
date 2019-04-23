@@ -8,9 +8,6 @@ DEPS = meck proper
 dep_meck = git-emqx https://github.com/emqx/meck.git 0.8.9
 dep_proper = hex-emqx 1.3.0
 
-BUILD_DEPS = emqx
-dep_emqx = git-emqx https://github.com/emqx/emqx $(BRANCH)
-
 ERLC_OPTS += +debug_info
 
 COVER = true
