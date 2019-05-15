@@ -99,7 +99,7 @@ start_app(App, Handler) ->
 start_app(App, SchemaFile, ConfigFile, SpecAppConfig) ->
     read_schema_configs(App, SchemaFile, ConfigFile),
     SpecAppConfig(App),
-    application:ensure_all_started(App).
+    {ok, _} = application:ensure_all_started(App).
 
 %% @private
 read_schema_configs(App, SchemaFile, ConfigFile) ->
