@@ -3,5 +3,7 @@
 	{vsn, "git"},
 	{modules, ['emqx_ct_access_control','emqx_ct_helpers','emqx_ct_proper_helpers','emqx_ct_transform']},
 	{registered, []},
-	{applications, [kernel,stdlib,meck,proper]}
+	{applications, [kernel,stdlib,meck,proper]},
+    {licenses,["Apache-2.0"]},
+    {links,[{"Github","https://github.com/emqx/emqx-ct-helpers"}]}
 ]}.
