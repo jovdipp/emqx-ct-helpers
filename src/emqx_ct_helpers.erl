@@ -24,6 +24,7 @@
 
 -export([ start_apps/1
         , start_apps/2
+        , start_app/4
         , stop_apps/1
         , reload/2
         , app_path/2
