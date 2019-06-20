@@ -24,6 +24,7 @@
 
 -export([ start_apps/1
         , start_apps/2
+        , start_app/4
         , stop_apps/1
         , reload/2
         , app_path/2
@@ -110,7 +111,7 @@ start_app(App, SchemaFile, ConfigFile, SpecAppConfig) ->
     RenderedConfigFile = render_config_file(ConfigFile, Vars),
     read_schema_configs(App, SchemaFile, RenderedConfigFile),
     SpecAppConfig(App),
-    application:ensure_all_started(App).
+    {ok, _} = application:ensure_all_started(App).
 
 render_config_file(ConfigFile, Vars0) ->
     {ok, Temp} = file:read_file(ConfigFile),
