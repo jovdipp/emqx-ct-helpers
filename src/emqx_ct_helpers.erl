@@ -22,7 +22,8 @@
 
 -type(apps() :: list(atom())).
 
--export([ start_apps/1
+-export([ boot_modules/1
+        , start_apps/1
         , start_apps/2
         , start_app/4
         , stop_apps/1
@@ -80,6 +81,10 @@
 %%------------------------------------------------------------------------------
 %% APIs
 %%------------------------------------------------------------------------------
+
+-spec(boot_modules(all|list(atom())) -> ok).
+boot_modules(Mods) ->
+    application:set_env(emqx, boot_modules, Mods).
 
 -spec(start_apps(Apps :: apps()) -> ok).
 start_apps(Apps) ->
