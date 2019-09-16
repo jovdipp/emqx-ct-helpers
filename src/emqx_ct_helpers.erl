@@ -136,7 +136,7 @@ read_schema_configs(App, SchemaFile, ConfigFile) ->
 
 -spec(stop_apps(list()) -> ok).
 stop_apps(Apps) ->
-    [application:stop(App) || App <- Apps ++ [emqx]].
+    [application:stop(App) || App <- Apps ++ [emqx, mnesia]].
 
 %% backward compatible
 deps_path(App, RelativePath) -> app_path(App, RelativePath).
