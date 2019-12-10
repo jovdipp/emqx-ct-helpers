@@ -127,7 +127,7 @@ render_config_file(ConfigFile, Vars0) ->
     NewName.
 
 read_schema_configs(App, SchemaFile, ConfigFile) ->
-    ct:pal("Read configs - SchemaFile: ~p, ConfigFile: ~p", [SchemaFile, ConfigFile]),
+    %% ct:pal("Read configs - SchemaFile: ~p, ConfigFile: ~p", [SchemaFile, ConfigFile]),
     Schema = cuttlefish_schema:files([SchemaFile]),
     Conf = conf_parse:file(ConfigFile),
     NewConfig = cuttlefish_generator:map(Schema, Conf),
@@ -136,7 +136,7 @@ read_schema_configs(App, SchemaFile, ConfigFile) ->
 
 -spec(stop_apps(list()) -> ok).
 stop_apps(Apps) ->
-    [application:stop(App) || App <- Apps ++ [emqx]].
+    [application:stop(App) || App <- Apps ++ [emqx, mnesia]].
 
 %% backward compatible
 deps_path(App, RelativePath) -> app_path(App, RelativePath).
