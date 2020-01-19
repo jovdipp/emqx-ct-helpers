@@ -13,3 +13,4 @@ emqx_ct_helpers.d
 _build/
 erlang.mk
 rebar.lock
+.rebar3/

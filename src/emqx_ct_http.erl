@@ -33,7 +33,7 @@ request_api(Method, Url, Auth) ->
 request_api(Method, Url, QueryParams, Auth) ->
     request_api(Method, Url, QueryParams, Auth, []).
 
-request_api(Method, Url, QueryParams, Auth, Body)->
+request_api(Method, Url, QueryParams, Auth, Body) ->
     request_api(Method, Url, QueryParams, Auth, Body, []).
 
 request_api(Method, Url, QueryParams, Auth, Body, HttpOpts) ->
@@ -64,7 +64,7 @@ do_request_api(Method, Request, HttpOpts) ->
     end.
 
 get_http_data(ResponseBody) ->
-    proplists:get_value(<<"data">>, emqx_json:decode(ResponseBody)).
+    maps:get(<<"data">>, emqx_json:decode(ResponseBody, [return_maps])).
 
 auth_header(User, Pass) ->
     Encoded = base64:encode_to_string(lists:append([User,":",Pass])),
