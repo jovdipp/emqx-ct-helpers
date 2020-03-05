@@ -37,6 +37,7 @@
 -export([ ensure_mnesia_stopped/0
         , wait_for/4
         , change_emqx_opts/1
+        , change_emqx_opts/2
         , client_ssl_twoway/0
         , client_ssl/0
         , wait_mqtt_payload/1
@@ -181,6 +182,8 @@ wait_for(Fn, Ln, F, Timeout) ->
     wait_for_down(Fn, Ln, Timeout, Pid, Mref, false).
 
 change_emqx_opts(SslType) ->
+    change_emqx_opts(SslType, []).
+change_emqx_opts(SslType, MoreOpts) ->
     {ok, Listeners} = application:get_env(emqx, listeners),
     GenNewListener = fun({Protocol, Port, Opts} = Listener, Acc) ->
                          case Protocol of
@@ -203,7 +206,10 @@ change_emqx_opts(SslType) ->
                                                               (_) -> true
                                                           end, TupleList2)
                                      end,
-                                 [{Protocol, Port, lists:keyreplace(ssl_options, 1, Opts, {ssl_options, TupleList3})} | Acc];
+                                 TupleList4 = emqx_misc:merge_opts(TupleList3, proplists:get_value(ssl_options, MoreOpts, [])),
+                                 NMoreOpts = emqx_misc:merge_opts(MoreOpts, [{ssl_options, TupleList4}]),
+                                 NOpts = emqx_misc:merge_opts(Opts, NMoreOpts),
+                                 [{Protocol, Port, NOpts} | Acc];
                              _ ->
                                  [Listener | Acc]
                          end
