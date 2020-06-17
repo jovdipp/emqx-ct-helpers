@@ -19,5 +19,4 @@
 
 -define(catch_error(Error, Exp),
         try (Exp) catch error:Error -> ok end).
-
 -endif.
