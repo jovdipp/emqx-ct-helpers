@@ -199,7 +199,7 @@ safty_timeout() ->
     non_neg_integer().
 
 nodename() ->
-    ?LET({Name, Ip}, {non_empty(list(visible_char())), ip()},
+    ?LET({Name, Ip}, {non_empty(list(latin_char())), ip()},
         begin
             binary_to_atom(iolist_to_binary([Name, "@", inet:ntoa(Ip)]), utf8)
         end).
@@ -289,15 +289,15 @@ systopic_mon() ->
 
 sharetopic() ->
     ?LET({Type, Grp, T},
-         {oneof([<<"$queue">>, <<"$share">>]), list(visible_char()), normal_topic()},
+         {oneof([<<"$queue">>, <<"$share">>]), list(latin_char()), normal_topic()},
          <<Type/binary, "/", (iolist_to_binary(Grp))/binary, "/", T/binary>>).
 
 normal_topic() ->
-    ?LET(L, list(frequency([{3, visible_char()}, {1, $/}])),
+    ?LET(L, list(frequency([{3, latin_char()}, {1, $/}])),
          list_to_binary(L)).
 
 normal_topic_filter() ->
-    ?LET({L, Wild}, {list(list(visible_char())), oneof(['#', '+'])},
+    ?LET({L, Wild}, {list(list(latin_char())), oneof(['#', '+'])},
          begin
              case Wild of
                  '#' ->
@@ -340,16 +340,16 @@ conn_mod() ->
            emqx_sn_gateway, emqx_lwm2m_protocol, atom()]).
 
 proto_name() ->
-    oneof([<<"MQTT">>, <<"MQTT-SN">>, <<"CoAP">>, <<"LwM2M">>, binary()]).
+    oneof([<<"MQTT">>, <<"MQTT-SN">>, <<"CoAP">>, <<"LwM2M">>, utf8()]).
 
 clientid() ->
-    oneof([visible_atom(), utf8()]).
+    utf8().
 
 username() ->
     maybe(utf8()).
 
 properties() ->
-    map(atom(), term()).
+    map(latin_atom(), binary()).
 
 %% millisecond
 timestamp() ->
@@ -361,7 +361,6 @@ zone() ->
 
 protocol() ->
     oneof([mqtt, 'mqtt-sn', coap, lwm2m, atom()]).
-
 
 url() ->
     ?LET({Schema, IP, Port, Path}, {oneof(["http://", "https://"]), ip(), port(), http_path()},
@@ -391,14 +390,14 @@ port() ->
     ?LET(Port, range(1, 16#ffff), Port).
 
 http_path() ->
-    list(frequency([{3, visible_char()},
+    list(frequency([{3, latin_char()},
                     {1, $/}])).
 
-visible_atom() ->
-    ?LET(Cs, list(visible_char()), list_to_atom(Cs)).
-
-visible_char() ->
+latin_char() ->
     oneof([integer($0, $9), integer($A, $Z), integer($a, $z)]).
+
+latin_atom() ->
+    ?LET(Cs, list(latin_char()), list_to_atom(Cs)).
 
 %%--------------------------------------------------------------------
 %% Iterators
