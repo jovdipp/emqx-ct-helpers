@@ -23,6 +23,7 @@
         , request_api/5
         , get_http_data/1
         , create_default_app/0
+        , delete_default_app/0
         , default_auth_header/0
         , auth_header/2
         ]).
@@ -77,3 +78,6 @@ default_auth_header() ->
 
 create_default_app() ->
     emqx_mgmt_auth:add_app(<<"myappid">>, <<"test">>).
+
+delete_default_app() ->
+    emqx_mgmt_auth:del_app(<<"myappid">>).
