@@ -115,7 +115,7 @@ mustache_vars(App) ->
 start_app(App, SchemaFile, ConfigFile, SpecAppConfig) ->
     Vars = mustache_vars(App),
     RenderedConfigFile = render_config_file(ConfigFile, Vars),
-    read_schema_configs(App, SchemaFile, RenderedConfigFile),
+    read_schema_configs(SchemaFile, RenderedConfigFile),
     SpecAppConfig(App),
     {ok, _} = application:ensure_all_started(App).
 
@@ -127,13 +127,15 @@ render_config_file(ConfigFile, Vars0) ->
     ok = file:write_file(NewName, Targ),
     NewName.
 
-read_schema_configs(App, SchemaFile, ConfigFile) ->
+read_schema_configs(SchemaFile, ConfigFile) ->
     %% ct:pal("Read configs - SchemaFile: ~p, ConfigFile: ~p", [SchemaFile, ConfigFile]),
     Schema = cuttlefish_schema:files([SchemaFile]),
     Conf = conf_parse:file(ConfigFile),
     NewConfig = cuttlefish_generator:map(Schema, Conf),
-    Vals = proplists:get_value(App, NewConfig, []),
-    [application:set_env(App, Par, Value) || {Par, Value} <- Vals].
+    lists:foreach(
+        fun({App, Configs}) ->
+            [application:set_env(App, Par, Value) || {Par, Value} <- Configs]
+        end, NewConfig).
 
 -spec(stop_apps(list()) -> ok).
 stop_apps(Apps) ->
