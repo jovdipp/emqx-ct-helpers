@@ -365,7 +365,11 @@ protocol() ->
 url() ->
     ?LET({Schema, IP, Port, Path}, {oneof(["http://", "https://"]), ip(), port(), http_path()},
         begin
-            lists:concat([Schema, inet:ntoa(IP), ":", integer_to_list(Port), "/", Path])
+            IP1 = case tuple_size(IP) == 8 of
+                true -> "[" ++ inet:ntoa(IP) ++ "]";
+                false -> inet:ntoa(IP)
+            end,
+            lists:concat([Schema, IP1, ":", integer_to_list(Port), "/", Path])
         end).
 
 ip() ->
