@@ -131,7 +131,7 @@ render_config_file(ConfigFile, Vars0) ->
 read_schema_configs(SchemaFile, ConfigFile) ->
     %% ct:pal("Read configs - SchemaFile: ~p, ConfigFile: ~p", [SchemaFile, ConfigFile]),
     Schema = cuttlefish_schema:files([SchemaFile]),
-    Conf = conf_parse:file(ConfigFile),
+    {ok, Conf} = hocon:load(ConfigFile, #{format => proplists}),
     NewConfig = cuttlefish_generator:map(Schema, Conf),
     lists:foreach(
         fun({App, Configs}) ->

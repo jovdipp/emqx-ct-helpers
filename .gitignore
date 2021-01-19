@@ -14,3 +14,4 @@ _build/
 erlang.mk
 rebar.lock
 .rebar3/
+/.idea/
