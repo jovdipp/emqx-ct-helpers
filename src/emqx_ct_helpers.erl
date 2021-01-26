@@ -46,8 +46,12 @@
         , render_config_file/2
         ]).
 
--define(CIPHERS, [{ciphers,
-                   ["ECDHE-ECDSA-AES256-GCM-SHA384",
+%% TODO: use default versions and cipers
+%% hard coded for now because it is used to override
+%% default config {cipers, undefined}
+-define(CIPHERS,
+        [{versions, ['tlsv1.1', 'tlsv1.2']},
+         {ciphers,  ["ECDHE-ECDSA-AES256-GCM-SHA384",
                     "ECDHE-RSA-AES256-GCM-SHA384",
                     "ECDHE-ECDSA-AES256-SHA384",
                     "ECDHE-RSA-AES256-SHA384","ECDHE-ECDSA-DES-CBC3-SHA",
