@@ -18,6 +18,7 @@
 
 -define(THIS_APP, ?MODULE).
 -include_lib("common_test/include/ct.hrl").
+-include("emqx_ct_helpers.hrl").
 
 -type(special_config_handler() :: fun()).
 
@@ -40,49 +41,14 @@
         , change_emqx_opts/1
         , change_emqx_opts/2
         , client_ssl_twoway/0
+        , client_ssl_twoway/1
         , client_ssl/0
+        , client_ssl/1
         , wait_mqtt_payload/1
         , not_wait_mqtt_payload/1
         , render_config_file/2
         ]).
 
-%% TODO: use default versions and cipers
-%% hard coded for now because it is used to override
-%% default config {cipers, undefined}
--define(CIPHERS,
-        [{versions, ['tlsv1.1', 'tlsv1.2']},
-         {ciphers,  ["ECDHE-ECDSA-AES256-GCM-SHA384",
-                    "ECDHE-RSA-AES256-GCM-SHA384",
-                    "ECDHE-ECDSA-AES256-SHA384",
-                    "ECDHE-RSA-AES256-SHA384","ECDHE-ECDSA-DES-CBC3-SHA",
-                    "ECDH-ECDSA-AES256-GCM-SHA384",
-                    "ECDH-RSA-AES256-GCM-SHA384",
-                    "ECDH-ECDSA-AES256-SHA384","ECDH-RSA-AES256-SHA384",
-                    "DHE-DSS-AES256-GCM-SHA384","DHE-DSS-AES256-SHA256",
-                    "AES256-GCM-SHA384","AES256-SHA256",
-                    "ECDHE-ECDSA-AES128-GCM-SHA256",
-                    "ECDHE-RSA-AES128-GCM-SHA256",
-                    "ECDHE-ECDSA-AES128-SHA256",
-                    "ECDHE-RSA-AES128-SHA256",
-                    "ECDH-ECDSA-AES128-GCM-SHA256",
-                    "ECDH-RSA-AES128-GCM-SHA256",
-                    "ECDH-ECDSA-AES128-SHA256","ECDH-RSA-AES128-SHA256",
-                    "DHE-DSS-AES128-GCM-SHA256","DHE-DSS-AES128-SHA256",
-                    "AES128-GCM-SHA256","AES128-SHA256",
-                    "ECDHE-ECDSA-AES256-SHA","ECDHE-RSA-AES256-SHA",
-                    "DHE-DSS-AES256-SHA","ECDH-ECDSA-AES256-SHA",
-                    "ECDH-RSA-AES256-SHA","AES256-SHA",
-                    "ECDHE-ECDSA-AES128-SHA","ECDHE-RSA-AES128-SHA",
-                    "DHE-DSS-AES128-SHA","ECDH-ECDSA-AES128-SHA",
-                    "ECDH-RSA-AES128-SHA","AES128-SHA"]}]).
-
--define(MQTT_SSL_TWOWAY, [{cacertfile, filename:join(["etc", "certs", "cacert.pem"])},
-                          {verify, verify_peer},
-                          {fail_if_no_peer_cert, true}]).
-
--define(MQTT_SSL_CLIENT, [{keyfile, filename:join(["etc", "certs", "client-key.pem"])},
-                          {cacertfile, filename:join(["etc", "certs", "cacert.pem"])},
-                          {certfile, filename:join(["etc", "certs", "client-cert.pem"])}]).
 
 %%------------------------------------------------------------------------------
 %% APIs
@@ -99,7 +65,7 @@ start_apps(Apps) ->
 -spec(start_apps(Apps :: apps(), Handler :: special_config_handler()) -> ok).
 start_apps(Apps, Handler) when is_function(Handler) ->
     %% Load all application code to beam vm first
-    %% Becasue, minirest, ekka etc.. application will scan these modules
+    %% Because, minirest, ekka etc.. application will scan these modules
     [application:load(App) || App <- Apps],
     [start_app(App, Handler) || App <- [emqx | Apps]],
     ok.
@@ -269,10 +235,24 @@ flush(Msgs) ->
     end.
 
 client_ssl_twoway() ->
-    [{Key, app_path(emqx, FilePath)} || {Key, FilePath} <- ?MQTT_SSL_CLIENT] ++ ?CIPHERS.
+    client_ssl_twoway(default).
+
+client_ssl_twoway(TLSVsn) ->
+    client_certs() ++ ciphers(TLSVsn).
+
+%% Paths prepended to cert filenames
+client_certs() ->
+    [ { Key, app_path(emqx, FilePath) } || { Key, FilePath } <- ?MQTT_SSL_CLIENT_CERTS ].
 
 client_ssl() ->
-    ?CIPHERS ++ [{reuse_sessions, true}].
+    client_ssl(default).
+
+client_ssl(TLSVsn) ->
+    ciphers(TLSVsn) ++ [{reuse_sessions, true}].
+
+ciphers(default) -> []; %% determined via config file defaults
+ciphers('tlsv1.3') -> ?TLS_1_3_CIPHERS;
+ciphers(_OlderTLSVsn) -> ?TLS_OLD_CIPHERS.
 
 wait_mqtt_payload(Payload) ->
     receive
