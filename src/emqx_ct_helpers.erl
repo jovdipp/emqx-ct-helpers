@@ -18,7 +18,7 @@
 
 -define(THIS_APP, ?MODULE).
 -include_lib("common_test/include/ct.hrl").
--include("../include/emqx_ct_helpers.hrl").
+-include("emqx_ct_helpers.hrl").
 
 -type(special_config_handler() :: fun()).
 
