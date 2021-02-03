@@ -30,7 +30,7 @@
                                           "TLS_CHACHA20_POLY1305_SHA256",
                                           "TLS_AES_128_CCM_SHA256",
                                           "TLS_AES_128_CCM_8_SHA256"
-							            ] }
+                                        ] }
                           ]).
 
 -define( TLS_OLD_CIPHERS,  [ { versions, [ 'tlsv1.1', 'tlsv1.2' ] },
@@ -71,5 +71,5 @@
                                            "ECDH-ECDSA-AES128-SHA",
                                            "ECDH-RSA-AES128-SHA",
                                            "AES128-SHA"
-							              ] }
+                                         ] }
                             ]).
