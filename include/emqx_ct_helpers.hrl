@@ -25,7 +25,7 @@
                                   { certfile,   ?CERTS_PATH( "client-cert.pem" ) } ] ).
 
 -define( TLS_1_3_CIPHERS, [ { versions, [ 'tlsv1.3' ] },
-							{ ciphers,  [ "TLS_AES_256_GCM_SHA384",
+                            { ciphers,  [ "TLS_AES_256_GCM_SHA384",
                                           "TLS_AES_128_GCM_SHA256",
                                           "TLS_CHACHA20_POLY1305_SHA256",
                                           "TLS_AES_128_CCM_SHA256",
