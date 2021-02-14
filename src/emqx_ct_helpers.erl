@@ -190,39 +190,46 @@ wait_for(Fn, Ln, F, Timeout) ->
 
 change_emqx_opts(SslType) ->
     change_emqx_opts(SslType, []).
+
 change_emqx_opts(SslType, MoreOpts) ->
     {ok, Listeners} = application:get_env(emqx, listeners),
-    GenNewListener = fun({Protocol, Port, Opts} = Listener, Acc) ->
-                         case Protocol of
-                             ssl ->
-                                 SslOpts = proplists:get_value(ssl_options, Opts),
-                                 Keyfile = app_path(emqx, filename:join(["etc", "certs", "key.pem"])),
-                                 Certfile = app_path(emqx, filename:join(["etc", "certs", "cert.pem"])),
-                                 TupleList1 = lists:keyreplace(keyfile, 1, SslOpts, {keyfile, Keyfile}),
-                                 TupleList2 = lists:keyreplace(certfile, 1, TupleList1, {certfile, Certfile}),
-                                 TupleList3 =
-                                     case SslType of
-                                         ssl_twoway ->
-                                             CAfile = app_path(emqx, proplists:get_value(cacertfile, ?MQTT_SSL_TWOWAY)),
-                                             MutSslList = lists:keyreplace(cacertfile, 1, ?MQTT_SSL_TWOWAY, {cacertfile, CAfile}),
-                                             lists:merge(TupleList2, MutSslList);
-                                         _ ->
-                                             lists:filter(fun ({cacertfile, _}) -> false;
-                                                              ({verify, _}) -> false;
-                                                              ({fail_if_no_peer_cert, _}) -> false;
-                                                              (_) -> true
-                                                          end, TupleList2)
-                                     end,
-                                 TupleList4 = emqx_misc:merge_opts(TupleList3, proplists:get_value(ssl_options, MoreOpts, [])),
-                                 NMoreOpts = emqx_misc:merge_opts(MoreOpts, [{ssl_options, TupleList4}]),
-                                 NOpts = emqx_misc:merge_opts(Opts, NMoreOpts),
-                                 [{Protocol, Port, NOpts} | Acc];
-                             _ ->
-                                 [Listener | Acc]
-                         end
-                     end,
-    NewListeners = lists:foldl(GenNewListener, [], Listeners),
+    NewListeners =
+        lists:map(fun(Listener) ->
+                          maybe_inject_listener_ssl_options(SslType, MoreOpts, Listener)
+                  end, Listeners),
     application:set_env(emqx, listeners, NewListeners).
+
+maybe_inject_listener_ssl_options(SslType, MoreOpts, {sll, Port, Opts}) ->
+    %% this clause is kept to be backward compatible
+    %% new config for listener is a map, old is a three-element tuple
+    {ssl, Port, inject_listener_ssl_options(SslType, Opts, MoreOpts)};
+maybe_inject_listener_ssl_options(SslType, MoreOpts, #{proto := ssl, opts := Opts} = Listener) ->
+    Listener#{opts := inject_listener_ssl_options(SslType, Opts, MoreOpts)};
+maybe_inject_listener_ssl_options(_SslType, _MoreOpts, Listener) ->
+    Listener.
+
+inject_listener_ssl_options(SslType, Opts, MoreOpts) ->
+    SslOpts = proplists:get_value(ssl_options, Opts),
+    Keyfile = app_path(emqx, filename:join(["etc", "certs", "key.pem"])),
+    Certfile = app_path(emqx, filename:join(["etc", "certs", "cert.pem"])),
+    TupleList1 = lists:keyreplace(keyfile, 1, SslOpts, {keyfile, Keyfile}),
+    TupleList2 = lists:keyreplace(certfile, 1, TupleList1, {certfile, Certfile}),
+    TupleList3 =
+        case SslType of
+            ssl_twoway ->
+                CAfile = app_path(emqx, proplists:get_value(cacertfile, ?MQTT_SSL_TWOWAY)),
+                MutSslList = lists:keyreplace(cacertfile, 1, ?MQTT_SSL_TWOWAY, {cacertfile, CAfile}),
+                lists:merge(TupleList2, MutSslList);
+            _ ->
+                lists:filter(fun ({cacertfile, _}) -> false;
+                                 ({verify, _}) -> false;
+                                 ({fail_if_no_peer_cert, _}) -> false;
+                                 (_) -> true
+                             end, TupleList2)
+        end,
+    TupleList4 = emqx_misc:merge_opts(TupleList3, proplists:get_value(ssl_options, MoreOpts, [])),
+    NMoreOpts = emqx_misc:merge_opts(MoreOpts, [{ssl_options, TupleList4}]),
+    emqx_misc:merge_opts(Opts, NMoreOpts).
 
 flush() ->
     flush([]).
