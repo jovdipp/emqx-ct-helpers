@@ -32,4 +32,4 @@
                         {?MASTER_ORCHESTRATION, 1}, {?JOB_MATRIX, 0}, {?JOB_OPTIONS, 1},
                         {?INIT_PER_JOB, 1}, {?END_PER_JOB, 2}]).
 
--define(INTERNAL_PERFIX, ct_jobs_override).
+-define(INTERNAL_PREFIX, ct_jobs_override_).

@@ -132,7 +132,7 @@ matrix_jobs([Row | Rows], AllJobs) ->
 combine([], _Jobs, Acc) ->
 	Acc;
 combine(Row, [], _Acc) ->
-	[ct_job(Item, <<"">>, [Item]) || Item <- Row];
+	[ct_job(Item, <<"">>, []) || Item <- Row];
 combine([Item | Rest], Jobs, Acc) ->
 	ItemJobs = [ct_job(Item, Job#ct_job.name, Job#ct_job.tree) || Job <- Jobs],
 	AccUpdated = ItemJobs ++ Acc,
@@ -244,7 +244,7 @@ get_name() ->
 	end.
 
 %% -------------------------------------------------------------------------------------------------
-%% Result Parsing
+%%  Result Parsing
 %% =================================================================================================
 
 parse_results(SuiteModule, Jobs) ->
@@ -293,7 +293,7 @@ override_function(_DoesNotExist, _Suite, _Name, _Args, Default) ->
 	Default.
 
 %% -------------------------------------------------------------------------------------------------
-%% Surefire Injection
+%%  Surefire Injection
 %% =================================================================================================
 
 surefire_out_path(SuiteModule, Name) ->
@@ -304,7 +304,7 @@ surefire_out_path(SuiteModule, Name) ->
 	Path.
 
 %% -------------------------------------------------------------------------------------------------
-%% Networking
+%%  Networking
 %% =================================================================================================
 
 container_ip(ContainerName) ->
@@ -336,7 +336,7 @@ test_platform_host() ->
 	end.
 
 %% -------------------------------------------------------------------------------------------------
-%% Helpers
+%%  Helpers
 %% =================================================================================================
 
 %% This should be improved in future, due to the Job Matrix not in the SUITE config

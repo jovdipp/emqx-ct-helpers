@@ -141,5 +141,5 @@ var_arg(Num) ->
     list_to_atom(Arg).
 
 intl_function_name(Name) ->
-    IntlName = lists:concat([?INTERNAL_PERFIX, Name]),
+    IntlName = lists:concat([?INTERNAL_PREFIX, Name]),
     list_to_atom(IntlName).
