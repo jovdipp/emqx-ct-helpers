@@ -14,6 +14,9 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
+-ifndef(EMQX_CT_JOBS_TRANSFORM_HRL).
+-define(EMQX_CT_JOBS_TRANSFORM_HRL, true).
+
 -define(CT_ALL, all).
 -define(CT_SUITE, suite).
 -define(CT_INIT_PER_SUITE, init_per_suite).
@@ -33,3 +36,5 @@
                         {?INIT_PER_JOB, 1}, {?END_PER_JOB, 2}]).
 
 -define(INTERNAL_PREFIX, ct_jobs_override_).
+
+-endif.
