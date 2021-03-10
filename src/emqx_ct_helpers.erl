@@ -168,10 +168,19 @@ safe_relative_path(Path) ->
     end.
 
 do_safe_relative_path(Path) ->
-    case filename:safe_relative_path(Path) of
+    case safe_relative_path_2(Path) of
         unsafe -> Path;
         OK -> OK
     end.
+
+-if(?OTP_RELEASE < 23).
+safe_relative_path_2(Path) ->
+    filename:safe_relative_path(Path).
+-else.
+safe_relative_path_2(Path) ->
+    {ok, Cwd} = file:get_cwd(),
+    filelib:safe_relative_path(Path, Cwd).
+-endif.
 
 -spec(reload(App :: atom(), SpecAppConfig :: special_config_handler()) -> ok).
 reload(App, SpecAppConfigHandler) ->
