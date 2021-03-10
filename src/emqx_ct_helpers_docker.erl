@@ -31,24 +31,65 @@ inspect( ContainerName, Inspection ) ->
     docker("inspect -f "++Inspection++" "++ContainerName).
 
 docker(Cmd) ->
-    os:cmd("docker "++Cmd).
+    sh("docker "++Cmd).
 
 compose( File, Project_name, ServiceName, Args, Env ) ->
     { ok, EnvPath } = set_env_file(Env),
     Cmd = "docker-compose --project-name "++Project_name++" --env-file "++EnvPath++" "++Args
           ++" -f "++File++" up --detach "++ServiceName,
-    Res = os:cmd(Cmd),
-    Res.
+    sh(Cmd).
 
 stop(ContainerName) ->
     Cmd = "docker stop " ++ ContainerName,
-    Res = os:cmd(Cmd),
-    Res.
+    sh(Cmd).
 
 set_env_file(Env) ->
     { ok, CWD } = file:get_cwd(),
     Unique = erlang:unique_integer()*-1,
     Filename = lists:concat([ ".docker-env-", Unique ]),
     Path = filename:join([ CWD, Filename]),
-    file:write_file(Path, Env),
+    ok = file:write_file(Path, Env),
     { ok, Path }.
+
+sh(Cmd0) ->
+    Cmd = "sh -c \"" ++ esc(Cmd0) ++ "\"; echo $?",
+    oscmd(Cmd).
+
+esc([]) -> [];
+esc([$" | Cmd]) -> [$\\, $" | esc(Cmd)];
+esc("$(" ++ Cmd) -> [$\\, $$, $( | esc(Cmd)];
+esc([C | Cmd]) -> [C | esc(Cmd)].
+
+oscmd(Cmd) ->
+    case parse(os:cmd(Cmd)) of
+        {0, Output} -> Output;
+        {N, Output} -> error({N, Output})
+    end.
+
+parse(Lines0) ->
+    %% last line is alwyas a \n
+    [$\n | Lines] = lists:reverse(Lines0),
+    %% second last line is $?
+    {LastLine, OutputLines} = lists:splitwith(fun (C) -> C =/= $\n end, Lines),
+    {list_to_integer(lists:reverse(LastLine)), lists:reverse(OutputLines)}.
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+
+sh_test_() ->
+    [ {"echo ab",
+       fun() -> ?assertEqual("ab\n", sh("echo 'ab'")) end}
+    , {"echo $",
+       fun() -> ?assertEqual("$\n", sh("echo '$'")) end}
+    , {"echo var",
+       fun() ->
+               os:putenv("AA", "abc"),
+               ?assertEqual("abc\n", sh("echo ${AA}")) end}
+    , {"echo sub cmd",
+       fun() ->
+               os:putenv("AAA", "abcd"),
+               ?assertEqual("xabcd\n", sh("echo \"x$(echo $AAA)\"")) end}
+    , {"non-zero exit",
+       fun() -> ?assertError({42, "Ab\n"}, sh("echo Ab; exit 42")) end}
+    ].
+-endif.
