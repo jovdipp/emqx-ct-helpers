@@ -21,7 +21,7 @@
 -compile(nowarn_export_all).
 -compile([{parse_transform, emqx_ct_jobs_suite_transform}]).
 
--include("./emqx_ct_job.hrl").
+-include("emqx_ct_job.hrl").
 -include_lib("common_test/include/ct.hrl").
 
 -define(JOB_MYSQLV8, mysqlV8).

@@ -20,8 +20,8 @@
          is_job_node/0, node_name/1, ct_master_orchestration/3, repo_root/0, container_ip/1,
          container_ip/2, test_platform_host/0]).
 
--include("./emqx_ct_job.hrl").
--include("./emqx_ct_jobs_transform.hrl").
+-include("emqx_ct_job.hrl").
+-include("emqx_ct_jobs_transform.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
 
 %% Forwarded Functions

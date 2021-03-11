@@ -14,7 +14,7 @@ ct:
 	@rebar3 ct -v
 
 eunit:
-	@rebar3 eunit
+	@rebar3 eunit -v
 
 xref:
 	@rebar3 xref
