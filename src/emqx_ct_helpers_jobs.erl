@@ -75,11 +75,10 @@
 	end.
 
 ?CT_INIT_PER_SUITE(FuncExists, Suite, Config) ->
+	ConfigUpdated = [ { ?JOBS_MATRIX_CONFIG, matrix_jobs(Suite:?JOB_MATRIX()) } | Config ],
 	case is_job_node() of
-		true ->
-			ConfigUpdated = [ { ?JOBS_MATRIX_CONFIG, matrix_jobs(Suite:?JOB_MATRIX()) } | Config ],
-			override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], Config);
-		false -> Config
+		true -> override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], Config);
+		false -> ConfigUpdated
 	end.
 
 ?CT_END_PER_SUITE(FuncExists, Suite, Config) ->
