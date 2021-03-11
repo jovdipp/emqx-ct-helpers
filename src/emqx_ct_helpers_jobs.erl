@@ -75,7 +75,11 @@
 	end.
 
 ?CT_INIT_PER_SUITE(FuncExists, Suite, Config) ->
-	ConfigUpdated = [ { ?JOBS_MATRIX_CONFIG, matrix_jobs(Suite:?JOB_MATRIX()) } | Config ],
+	Jobs = matrix_jobs(Suite:?JOB_MATRIX()),
+	JobName = list_to_binary(get_name()),
+	CurrentJob = lists:keyfind(JobName, 2, Jobs),
+	JobsConfig = [ { job, CurrentJob }, { all_jobs, Jobs } ],
+	ConfigUpdated = [ { ?JOBS_MATRIX_CONFIG, JobsConfig } | Config ],
 	case is_job_node() of
 		true -> override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], Config);
 		false -> ConfigUpdated
@@ -154,7 +158,8 @@ job_name(ItemName, Job) ->
 	<<ItemNameBin/binary, Join/binary, Job/binary>>.
 
 ct_master_orchestration(_FuncExists, Suite, Config) ->
-	Jobs = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
+	JobsConfig = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
+	Jobs = proplists:get_value( jobs, JobsConfig ),
 	{ok, SpecFilename} = emqx_ct_helpers_jobs:generate_specfile(Suite, Jobs),
 	ct_master:run(SpecFilename),
 	case emqx_ct_helpers_jobs:parse_results(Suite, Jobs) of
@@ -341,10 +346,7 @@ test_platform_host() ->
 %%  Helpers
 %% =================================================================================================
 
-%% This should be improved in future, due to the Job Matrix not in the SUITE config
-%% the matrix structure has to be re-generated
 intl_end_per_job(Suite, Config) ->
-	Jobs = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
-	JobName = list_to_binary(get_name()),
-	Job = lists:keyfind(JobName, 2, Jobs),
+	JobsConfig = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
+	Job = proplists:get_value( job, JobsConfig ),
 	Suite:?END_PER_JOB(Job, Config).
