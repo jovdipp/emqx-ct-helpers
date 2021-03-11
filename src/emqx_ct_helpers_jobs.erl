@@ -159,10 +159,10 @@ job_name(ItemName, Job) ->
 
 ct_master_orchestration(_FuncExists, Suite, Config) ->
 	JobsConfig = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
-	Jobs = proplists:get_value( jobs, JobsConfig ),
-	{ok, SpecFilename} = emqx_ct_helpers_jobs:generate_specfile(Suite, Jobs),
+	Jobs = proplists:get_value( all_jobs, JobsConfig ),
+	{ok, SpecFilename} = generate_specfile(Suite, Jobs),
 	ct_master:run(SpecFilename),
-	case emqx_ct_helpers_jobs:parse_results(Suite, Jobs) of
+	case parse_results(Suite, Jobs) of
 		{error, Errors} ->
 			exit({failed_tests, Errors});
 		{ok, successful} ->
