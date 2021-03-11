@@ -15,3 +15,4 @@
 %%--------------------------------------------------------------------
 
 -record(ct_job, {name, tree, index}).
+-define(JOBS_MATRIX_CONFIG, jobs_matrix).
