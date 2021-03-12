@@ -115,47 +115,37 @@ matrix_jobs(Matrix) ->
 	matrix_into_jobs(Matrix).
 
 matrix_into_jobs(Matrix) ->
-	GroupsAcc = [],
-	MatrixReversed = lists:reverse(Matrix),
-	Jobs = matrix_jobs(MatrixReversed, GroupsAcc),
-	index_jobs(Jobs).
+	Vectors = enum_dimentions(Matrix),
+	make_jobs(Vectors).
 
-index_jobs(Jobs) ->
-	index_jobs(Jobs, 0, []).
+make_jobs(Vectors) ->
+	make_jobs(Vectors, 0, []).
 
-index_jobs([], _Index, Acc) ->
-	Acc;
-index_jobs([Job | Jobs], Index, Acc) ->
-	AccUpdated = [Job#ct_job{index = Index} | Acc],
-	index_jobs(Jobs, Index + 1, AccUpdated).
+make_jobs([], _Index, Acc) -> lists:reverse(Acc);
+make_jobs([Vector | Vectors], Index, Acc) ->
+    Job = #ct_job{ name = make_name(Vector)
+                 , tree = Vector
+                 , index = Index
+                 },
+	make_jobs(Vectors, Index + 1, [Job | Acc]).
 
-matrix_jobs([], Jobs) ->
-	Jobs;
-matrix_jobs([Row | Rows], AllJobs) ->
-	AllJobsUpdated = combine(Row, AllJobs, []),
-	matrix_jobs(Rows, AllJobsUpdated).
+make_name(Atoms) ->
+    iolist_to_binary(infix([atom_to_binary(A, utf8) || A <- Atoms], "_")).
 
-combine([], _Jobs, Acc) ->
-	Acc;
-combine(Row, [], _Acc) ->
-	[ct_job(Item, <<"">>, []) || Item <- Row];
-combine([Item | Rest], Jobs, Acc) ->
-	ItemJobs = [ct_job(Item, Job#ct_job.name, Job#ct_job.tree) || Job <- Jobs],
-	AccUpdated = ItemJobs ++ Acc,
-	combine(Rest, Jobs, AccUpdated).
+infix([I], _) -> [I];
+infix([H | T], In) -> [H, In | infix(T, In)].
 
-ct_job(Item, NamePrev, TreePrev) ->
-	Name = job_name(Item, NamePrev),
-	Tree = [Item | TreePrev],
-	#ct_job{name = Name, tree = Tree}.
+%% enumerate all dimentions of a matrix
+%% sample  input: [[a,b], [1], [x,y,z]]
+%% sample output: [[a,1,x],[a,1,y],[a,1,z],[b,1,x],[b,1,y],[b,1,z]]
+enum_dimentions(Matrix) ->
+    enum_dimentions(Matrix, [[]]).
 
-job_name(ItemName, Job) ->
-	ItemNameBin = atom_to_binary(ItemName, utf8),
-	Join = case Job of
-		       <<"">> -> <<"">>;
-		       Job -> <<"_">>
-	       end,
-	<<ItemNameBin/binary, Join/binary, Job/binary>>.
+enum_dimentions([], Vectors) ->
+    lists:map(fun lists:reverse/1, Vectors);
+enum_dimentions([Row | Rows], Vectors) ->
+    NewVec = [[Col | Vector] || Vector <- Vectors, Col <- Row],
+    enum_dimentions(Rows, NewVec).
 
 ct_master_orchestration(_FuncExists, Suite, Config) ->
 	JobsConfig = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
@@ -180,7 +170,7 @@ generate_specfile(SuiteModule, Jobs) ->
 	ChildNodes = generate_child_nodes(Jobs, SuiteModule),
 	SpecFilename = spec_filename(SuiteModule, BaseDir),
 	Suite = atom_to_binary(SuiteModule, utf8),
-	
+
 	Spec = [ChildNodes,
 	        <<"{logdir, all_nodes, \"">>, LogDir, <<"\"}.\n">>,
 	        <<"{logdir, master, \"">>, LogDir, <<"\"}.\n">>,
@@ -350,3 +340,30 @@ intl_end_per_job(Suite, Config) ->
 	JobsConfig = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
 	Job = proplists:get_value( job, JobsConfig ),
 	Suite:?END_PER_JOB(Job, Config).
+
+%% -------------------------------------------------------------------------------------------------
+%%  Eunit
+%% =================================================================================================
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+
+enum_dimentions_1_test() ->
+    ?assertEqual([[a], [b]], enum_dimentions([[a, b]])).
+
+enum_dimentions_test() ->
+    Matrix = [[a, b], [1], [x, y, z]],
+    ?assertEqual([[a, 1, x],
+                  [a, 1, y],
+                  [a, 1, z],
+                  [b, 1, x],
+                  [b, 1, y],
+                  [b,1,z]], enum_dimentions(Matrix)).
+
+make_name_test_() ->
+    [ {"one atom", ?_assertEqual(<<"a">>, make_name([a]))}
+    , {"tow atoms", ?_assertEqual(<<"a_b">>, make_name([a,b]))}
+    , {"three atoms", ?_assertEqual(<<"a_b_c">>, make_name([a,b,c]))}
+    ].
+
+-endif.
