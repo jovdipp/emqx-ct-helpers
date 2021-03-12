@@ -31,11 +31,8 @@
 -define(JOB_IPV4, ipv4).
 -define(JOB_IPV6, ipv6).
 
-
-
 all() ->
     [t_test_running_in_each_job].
-
 
 %% ( Multiple configurations concurrently in unique nodes )
 job_matrix() ->
@@ -83,9 +80,6 @@ init_per_suite(Config) ->
 end_per_suite(Config) ->
     ok.
 
-
-
-
 t_test_running_in_each_job(_Config) ->
     EnvValues = os:getenv(),
     [ #ct_job{ name=JobName } | _ ] = emqx_ct_helpers_jobs:matrix_jobs(job_matrix()),
@@ -94,8 +88,6 @@ t_test_running_in_each_job(_Config) ->
         JobNode -> exit(failing_test_me_for_first_job_name);
         _Other -> ok
     end.
-
-
 
 %% -------------------------------------------------------------------------------------------------
 %% INTERNAL HELPERS
@@ -115,8 +107,6 @@ all_jobs_env( Index ) ->
      { "EMQX_AUTH__MYSQL__PASSWORD","public" },
      { "EMQX_AUTH__MYSQL__DATABASE","mqtt" },
      { "CUTTLEFISH_ENV_OVERRIDE_PREFIX","EMQX_" }].
-
-
 
 mysql_vsn(?JOB_MYSQLV8) -> "8";
 mysql_vsn(?JOB_MYSQLV5_7) -> "5.7".

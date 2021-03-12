@@ -18,5 +18,6 @@
 -define(EMQX_CT_JOB_HRL, true).
 
 -record(ct_job, {name, tree, index}).
+-define(JOBS_MATRIX_CONFIG, jobs_matrix).
 
 -endif.

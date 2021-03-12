@@ -33,6 +33,7 @@
 -define(ERROR_TYPE_FAILED_TEST, failed_tests).
 -define(JOBS_NODE_PREFIX, <<"job-matrix-test-node-">>).
 
+
 %% -------------------------------------------------------------------------------------------------
 %%  Forwarded Functions ( Macro used to keep in sync with emqx_ct_jobs_suite_transform )
 %% =================================================================================================
@@ -74,9 +75,14 @@
 	end.
 
 ?CT_INIT_PER_SUITE(FuncExists, Suite, Config) ->
+	Jobs = matrix_jobs(Suite:?JOB_MATRIX()),
+	JobName = list_to_binary(get_name()),
+	CurrentJob = lists:keyfind(JobName, 2, Jobs),
+	JobsConfig = [ { job, CurrentJob }, { all_jobs, Jobs } ],
+	ConfigUpdated = [ { ?JOBS_MATRIX_CONFIG, JobsConfig } | Config ],
 	case is_job_node() of
-		true -> override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [Config], Config);
-		false -> Config
+		true -> override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], Config);
+		false -> ConfigUpdated
 	end.
 
 ?CT_END_PER_SUITE(FuncExists, Suite, Config) ->
@@ -151,11 +157,12 @@ job_name(ItemName, Job) ->
 	       end,
 	<<ItemNameBin/binary, Join/binary, Job/binary>>.
 
-ct_master_orchestration(_FuncExists, Suite, _Config) ->
-	Jobs = matrix_jobs(Suite:job_matrix()),
-	{ok, SpecFilename} = emqx_ct_helpers_jobs:generate_specfile(Suite, Jobs),
+ct_master_orchestration(_FuncExists, Suite, Config) ->
+	JobsConfig = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
+	Jobs = proplists:get_value( all_jobs, JobsConfig ),
+	{ok, SpecFilename} = generate_specfile(Suite, Jobs),
 	ct_master:run(SpecFilename),
-	case emqx_ct_helpers_jobs:parse_results(Suite, Jobs) of
+	case parse_results(Suite, Jobs) of
 		{error, Errors} ->
 			exit({failed_tests, Errors});
 		{ok, successful} ->
@@ -339,10 +346,7 @@ test_platform_host() ->
 %%  Helpers
 %% =================================================================================================
 
-%% This should be improved in future, due to the Job Matrix not in the SUITE config
-%% the matrix structure has to be re-generated
 intl_end_per_job(Suite, Config) ->
-	JobName = list_to_binary(get_name()),
-	Jobs = matrix_jobs(Suite:?JOB_MATRIX()),
-	Job = lists:keyfind(JobName, 2, Jobs),
+	JobsConfig = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
+	Job = proplists:get_value( job, JobsConfig ),
 	Suite:?END_PER_JOB(Job, Config).
