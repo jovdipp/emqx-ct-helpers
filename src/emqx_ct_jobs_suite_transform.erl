@@ -18,7 +18,7 @@
 
 -export([parse_transform/2, intl_function_name/1]).
 
--include("./emqx_ct_jobs_transform.hrl").
+-include("emqx_ct_jobs_transform.hrl").
 
 -record(audit, { module, found=[], eof_line }).
 
