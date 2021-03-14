@@ -40,12 +40,10 @@ compose( File, Project_name, ServiceName, Args, Env ) ->
     sh(Cmd).
 
 stop(ContainerName) ->
-    Cmd = "docker stop " ++ ContainerName,
-    sh(Cmd).
+    sh("docker stop " ++ ContainerName).
 
 remove(ContainerName) ->
-    Cmd = "docker rm " ++ ContainerName,
-    sh(Cmd).
+    sh("docker rm " ++ ContainerName).
 
 set_env_file(Env) ->
     { ok, CWD } = file:get_cwd(),
