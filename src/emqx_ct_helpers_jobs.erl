@@ -57,21 +57,27 @@
 	end.
 
 ?CT_SUITE(FuncExists, Suite) ->
-	Config = override_function(FuncExists, Suite, ?CT_SUITE, []),
-	Name = get_name(),
-	SureFirePath = surefire_out_path(Suite, Name),
-	SureFireHook = {cth_surefire, [{path, SureFirePath}]},
-	case lists:keyfind(ct_hooks, 1, Config) of
-		{ct_hooks, Hooks} ->
-			case lists:keymember(cth_surefire, 1, Hooks) of
-				true ->
-					Config;
+	try override_function(FuncExists, Suite, ?CT_SUITE, []) of
+		Config ->
+			Name = get_name(),
+			SureFirePath = surefire_out_path(Suite, Name),
+			SureFireHook = {cth_surefire, [{path, SureFirePath}]},
+			case lists:keyfind(ct_hooks, 1, Config) of
+				{ct_hooks, Hooks} ->
+					case lists:keymember(cth_surefire, 1, Hooks) of
+						true ->
+							Config;
+						false ->
+							CTHooks = {ct_hooks, [SureFireHook | Hooks]},
+							lists:keyreplace(ct_hooks, 1, Config, CTHooks)
+					end;
 				false ->
-					CTHooks = {ct_hooks, [SureFireHook | Hooks]},
-					lists:keyreplace(ct_hooks, 1, Config, CTHooks)
-			end;
-		false ->
-			[{ct_hooks, [SureFireHook]} | Config]
+					[{ct_hooks, [SureFireHook]} | Config]
+			end
+	catch
+		Type:Exception:Stack ->
+			intl_end_per_job(Suite, { Type, Exception } ),
+			exit(Exception, Stack)
 	end.
 
 ?CT_INIT_PER_SUITE(FuncExists, Suite, Config) ->
