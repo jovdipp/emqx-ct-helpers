@@ -56,7 +56,6 @@ set_env_file(Env) ->
     { ok, Path }.
 
 sh(Cmd) ->
-    io:format("~n Cmd : ~p ", [ Cmd ] ),
     Port = open_port({spawn, Cmd}, [ use_stdio, stderr_to_stdout, eof, hide, exit_status, { parallelism, true } ]),
     get_data(Port, []).
 
