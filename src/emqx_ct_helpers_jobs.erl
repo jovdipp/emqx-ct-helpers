@@ -57,28 +57,23 @@
 	end.
 
 ?CT_SUITE(FuncExists, Suite) ->
-	try override_function(FuncExists, Suite, ?CT_SUITE, []) of
-		Config ->
-			Name = get_name(),
-			SureFirePath = surefire_out_path(Suite, Name),
-			SureFireHook = {cth_surefire, [{path, SureFirePath}]},
-			case lists:keyfind(ct_hooks, 1, Config) of
-				{ct_hooks, Hooks} ->
-					case lists:keymember(cth_surefire, 1, Hooks) of
-						true ->
-							Config;
-						false ->
-							CTHooks = {ct_hooks, [SureFireHook | Hooks]},
-							lists:keyreplace(ct_hooks, 1, Config, CTHooks)
-					end;
+	Config = override_function(FuncExists, Suite, ?CT_SUITE, []),
+	Name = get_name(),
+	SureFirePath = surefire_out_path(Suite, Name),
+	SureFireHook = {cth_surefire, [{path, SureFirePath}]},
+	case lists:keyfind(ct_hooks, 1, Config) of
+		{ct_hooks, Hooks} ->
+			case lists:keymember(cth_surefire, 1, Hooks) of
+				true ->
+					Config;
 				false ->
-					[{ct_hooks, [SureFireHook]} | Config]
-			end
-	catch
-		Type:Exception:Stack ->
-			intl_end_per_job(Suite, { Type, Exception } ),
-			exit(Exception, Stack)
+					CTHooks = {ct_hooks, [SureFireHook | Hooks]},
+					lists:keyreplace(ct_hooks, 1, Config, CTHooks)
+			end;
+		false ->
+			[{ct_hooks, [SureFireHook]} | Config]
 	end.
+	
 
 ?CT_INIT_PER_SUITE(FuncExists, Suite, Config) ->
 	Jobs = matrix_jobs(Suite:?JOB_MATRIX()),
@@ -87,7 +82,15 @@
 	JobsConfig = [ { job, CurrentJob }, { all_jobs, Jobs } ],
 	ConfigUpdated = [ { ?JOBS_MATRIX_CONFIG, JobsConfig } | Config ],
 	case is_job_node() of
-		true -> override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], Config);
+		true ->
+			try override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], Config) of
+				Res -> Res
+			catch
+				Type:Exception:Stack ->
+					ConfigUpdatedErr = [ { abandoned, { Type, Exception }}],
+					intl_end_per_job(Suite, ConfigUpdatedErr ),
+					exit(Exception, Stack)
+			end;
 		false -> ConfigUpdated
 	end.
 
