@@ -87,7 +87,8 @@
 				Res -> Res
 			catch
 				Type:Exception:Stack ->
-					intl_end_per_job(Suite, { Type, Exception } ),
+					ConfigUpdatedErr = [ { abandoned, { Type, Exception }}],
+					intl_end_per_job(Suite, ConfigUpdatedErr ),
 					exit(Exception, Stack)
 			end;
 		false -> ConfigUpdated
