@@ -175,7 +175,7 @@ generate_specfile(SuiteModule, Jobs) ->
 	BaseDir = jobs_dir(),
 	LogDir = dir(BaseDir, "logs"),
 	
-	MasterIndex = "<a href='file:///"++BaseDir++"/index.html'>Index</a>",
+	MasterIndex = "<a href='file:///"++LogDir++"/index.html'>Index</a>",
 	ct:log("Master Log Index ~n~p", [ MasterIndex ]),
 	
 	SuiteDir = suite_dir(SuiteModule),
