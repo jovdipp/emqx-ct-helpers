@@ -77,11 +77,10 @@ init_per_suite(Config) ->
     io:format("~n Config : ~p ", [ Config ] ),
     [{ additional, job_only }].
 
-end_per_suite(Config) ->
+end_per_suite(_Config) ->
     ok.
 
 t_test_running_in_each_job(_Config) ->
-    EnvValues = os:getenv(),
     [ #ct_job{ name=JobName } | _ ] = emqx_ct_helpers_jobs:matrix_jobs(job_matrix()),
     JobNode = binary_to_atom(emqx_ct_helpers_jobs:node_name(JobName ), utf8 ),
     case node() of
