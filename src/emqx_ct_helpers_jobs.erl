@@ -73,7 +73,6 @@
 		false ->
 			[{ct_hooks, [SureFireHook]} | Config]
 	end.
-	
 
 ?CT_INIT_PER_SUITE(FuncExists, Suite, Config) ->
 	Jobs = matrix_jobs(Suite:?JOB_MATRIX()),
@@ -185,6 +184,10 @@ ct_master_orchestration(_FuncExists, Suite, Config) ->
 generate_specfile(SuiteModule, Jobs) ->
 	BaseDir = jobs_dir(),
 	LogDir = dir(BaseDir, "logs"),
+	
+	MasterIndex = "<a href='file:///"++BaseDir++"'>Index</a>",
+	ct:log("Master Log Index ~n~p", [ MasterIndex ]),
+	
 	SuiteDir = suite_dir(SuiteModule),
 	ChildNodes = generate_child_nodes(Jobs, SuiteModule),
 	SpecFilename = spec_filename(SuiteModule, BaseDir),
