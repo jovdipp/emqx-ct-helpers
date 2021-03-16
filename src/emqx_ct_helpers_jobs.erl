@@ -148,14 +148,14 @@ combine([], _Jobs, Acc) ->
 combine(Row, [], _Acc) ->
 	[ct_job(Item, <<"">>, []) || Item <- Row];
 combine([Item | Rest], Jobs, Acc) ->
-	ItemJobs = [ct_job(Item, Job#ct_job.name, Job#ct_job.tree) || Job <- Jobs],
+	ItemJobs = [ct_job(Item, Job#ct_job.name, Job#ct_job.vectors ) || Job <- Jobs],
 	AccUpdated = ItemJobs ++ Acc,
 	combine(Rest, Jobs, AccUpdated).
 
-ct_job(Item, NamePrev, TreePrev) ->
+ct_job(Item, NamePrev, VectorsPrev) ->
 	Name = job_name(Item, NamePrev),
-	Tree = [Item | TreePrev],
-	#ct_job{name = Name, tree = Tree}.
+	Vectors = [Item | VectorsPrev],
+	#ct_job{name = Name, vectors = Vectors}.
 
 job_name(ItemName, Job) ->
 	ItemNameBin = atom_to_binary(ItemName, utf8),
