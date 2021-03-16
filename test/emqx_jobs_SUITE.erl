@@ -40,7 +40,7 @@ job_matrix() ->
       [ ?JOB_TLS, ?JOB_TCP ],
       [ ?JOB_IPV4, ?JOB_IPV6 ] ].
 
-init_per_job( #ct_job{ name=Name, tree=[ VSN, _Connection, _IPv ], index = Index }) ->
+init_per_job( #ct_job{ name=Name, vectors=[ VSN, _Connection, _IPv ], index = Index }) ->
     Env = docker_env(Name, VSN, Index),
     File = docker_compose_file(),
     JobName = binary_to_list(Name),
@@ -52,7 +52,7 @@ end_per_job( #ct_job{ name=NameBin }, _Config ) ->
     emqx_ct_helpers_docker:stop(JobName),
     ok.
 
-job_options( #ct_job{name =NameBin, tree =[ _VSN, tls, IPv ], index = Index } ) ->
+job_options( #ct_job{name =NameBin, vectors =[ _VSN, tls, IPv ], index = Index } ) ->
     AllJobsEnv = all_jobs_env(Index),
     JobName = binary_to_list(NameBin),
     TlsEnvs = [ server_env( JobName, IPv, Index ),
@@ -63,7 +63,7 @@ job_options( #ct_job{name =NameBin, tree =[ _VSN, tls, IPv ], index = Index } ) 
               ],
     Envs = AllJobsEnv ++ TlsEnvs,
     [ { env, Envs } ];
-job_options( #ct_job{name =NameBin, tree =[ _VSN, tcp, IPv ], index = Index } ) ->
+job_options( #ct_job{name =NameBin, vectors =[ _VSN, tcp, IPv ], index = Index } ) ->
     AllJobsEnv = all_jobs_env(Index),
     JobName = binary_to_list(NameBin),
     TcpEnvs = [ server_env( JobName, IPv, Index ),

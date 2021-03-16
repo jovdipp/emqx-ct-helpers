@@ -21,7 +21,7 @@
 
 -record(ct_job,
         { name :: binary() %% name of the job
-        , tree :: [atom()] %% TODO rename it to vector?
+        , vectors :: [atom()]
         , index :: non_neg_integer() %% zero based index
         }).
 

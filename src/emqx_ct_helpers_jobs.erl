@@ -132,7 +132,7 @@ make_jobs(Vectors) ->
 make_jobs([], _Index, Acc) -> lists:reverse(Acc);
 make_jobs([Vector | Vectors], Index, Acc) ->
     Job = #ct_job{ name = make_name(Vector)
-                 , tree = Vector
+                 , vectors = Vector
                  , index = Index
                  },
 	make_jobs(Vectors, Index + 1, [Job | Acc]).
@@ -154,6 +154,7 @@ enum_dimentions([], Vectors) ->
 enum_dimentions([Row | Rows], Vectors) ->
     NewVec = [[Col | Vector] || Vector <- Vectors, Col <- Row],
     enum_dimentions(Rows, NewVec).
+
 
 ct_master_orchestration(_FuncExists, Suite, Config) ->
 	JobsConfig = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
