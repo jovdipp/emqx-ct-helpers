@@ -148,7 +148,7 @@ combine([], _Jobs, Acc) ->
 combine(Row, [], _Acc) ->
 	[ct_job(Item, <<"">>, []) || Item <- Row];
 combine([Item | Rest], Jobs, Acc) ->
-	ItemJobs = [ct_job(Item, Job#ct_job.name, Job#ct_job.vectors ) || Job <- Jobs],
+	ItemJobs = [ct_job(Item, Job#ct_job.name, Job#ct_job.vectors) || Job <- Jobs],
 	AccUpdated = ItemJobs ++ Acc,
 	combine(Rest, Jobs, AccUpdated).
 
@@ -209,15 +209,14 @@ generate_child_nodes(Jobs, SuiteModule) ->
 
 child_node_spec(#ct_job{name = Name} = Job, SuiteModule) ->
 	Node = node_name(Name),
-	%% Starting Job Deps to allow Options to include Dep runtime info ( i.e. Docker Networking )
-	SuiteModule:?INIT_PER_JOB(Job),
 	Options = options(Job, SuiteModule),
 	[<<"{node,">>, Name, <<",'">>, Node, <<"'}.\n">>,
 	 <<"{init,">>, Name, <<",[{node_start,">>, Options, <<"}]}.\n">>].
 
 options(Job, SuiteModule) ->
 	Opts = SuiteModule:job_options(Job),
-	CodePaths = {startup_functions, [{code, add_paths, [code:get_path()]}]},
+	CodePaths = {startup_functions, [{code, add_paths, [code:get_path()]},
+	                                 {SuiteModule, ?INIT_PER_JOB, [Job] }]},
 	OptsUpdated = [{monitor_master, true}, CodePaths | Opts],
 	OptsStr = io_lib:format("~1p", [OptsUpdated]),
 	list_to_binary(lists:flatten(OptsStr)).
