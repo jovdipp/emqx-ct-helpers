@@ -16,7 +16,7 @@
 
 -module(emqx_ct_helpers_docker).
 
--export([docker_ip/2, compose/5, stop/1]).
+-export([docker_ip/2, compose/5, stop/1, remove/1, force_remove/1]).
 
 docker_ip( ContainerName, ipv4 ) ->
     inspect_network( ContainerName, ".IPAddress" );
@@ -40,8 +40,13 @@ compose( File, Project_name, ServiceName, Args, Env ) ->
     sh(Cmd).
 
 stop(ContainerName) ->
-    Cmd = "docker stop " ++ ContainerName,
-    sh(Cmd).
+    sh("docker stop " ++ ContainerName).
+
+remove(ContainerName) ->
+    sh("docker rm " ++ ContainerName).
+
+force_remove(ContainerName) ->
+    sh("docker rm -f " ++ ContainerName).
 
 set_env_file(Env) ->
     { ok, CWD } = file:get_cwd(),
@@ -51,45 +56,30 @@ set_env_file(Env) ->
     ok = file:write_file(Path, Env),
     { ok, Path }.
 
-sh(Cmd0) ->
-    Cmd = "sh -c \"" ++ esc(Cmd0) ++ "\"; echo $?",
-    oscmd(Cmd).
+sh(Cmd) ->
+    Options = [ use_stdio, stderr_to_stdout, eof, hide, exit_status, { parallelism, true } ],
+    Port = open_port({spawn, Cmd}, Options),
+    get_data(Port, []).
 
-esc([]) -> [];
-esc([$" | Cmd]) -> [$\\, $" | esc(Cmd)];
-esc("$(" ++ Cmd) -> [$\\, $$, $( | esc(Cmd)];
-esc([C | Cmd]) -> [C | esc(Cmd)].
-
-oscmd(Cmd) ->
-    case parse(os:cmd(Cmd)) of
-        {0, Output} -> Output;
-        {N, Output} -> error({N, Output})
+get_data(Port, Sofar) ->
+    receive
+        {Port, {data, Bytes}} ->
+            get_data(Port, [Sofar|Bytes]);
+        {Port, eof} ->
+            Port ! {self(), close},
+            receive
+                { Port, closed } ->
+                    true
+            end,
+            receive
+                {'EXIT',  Port,  _} ->
+                    ok
+            after 1 ->
+                ok
+            end,
+            ExitCode = receive
+                           { Port, { exit_status, Code } } ->
+                               Code
+                       end,
+            { ExitCode, lists:flatten( Sofar) }
     end.
-
-parse(Lines0) ->
-    %% last line is alwyas a \n
-    [$\n | Lines] = lists:reverse(Lines0),
-    %% second last line is $?
-    {LastLine, OutputLines} = lists:splitwith(fun (C) -> C =/= $\n end, Lines),
-    {list_to_integer(lists:reverse(LastLine)), lists:reverse(OutputLines)}.
-
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
-
-sh_test_() ->
-    [ {"echo ab",
-       fun() -> ?assertEqual("ab\n", sh("echo 'ab'")) end}
-    , {"echo $",
-       fun() -> ?assertEqual("$\n", sh("echo '$'")) end}
-    , {"echo var",
-       fun() ->
-               os:putenv("AA", "abc"),
-               ?assertEqual("abc\n", sh("echo ${AA}")) end}
-    , {"echo sub cmd",
-       fun() ->
-               os:putenv("AAA", "abcd"),
-               ?assertEqual("xabcd\n", sh("echo \"x$(echo $AAA)\"")) end}
-    , {"non-zero exit",
-       fun() -> ?assertError({42, "Ab\n"}, sh("echo Ab; exit 42")) end}
-    ].
--endif.

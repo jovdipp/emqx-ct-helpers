@@ -81,7 +81,9 @@
 	JobsConfig = [ { job, CurrentJob }, { all_jobs, Jobs } ],
 	ConfigUpdated = [ { ?JOBS_MATRIX_CONFIG, JobsConfig } | Config ],
 	case is_job_node() of
-		true -> override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], Config);
+		true ->
+			Hook = on_init_per_suite_failure(Suite, Config),
+			override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], Config, Hook);
 		false -> ConfigUpdated
 	end.
 
@@ -124,7 +126,7 @@ make_jobs(Vectors) ->
 make_jobs([], _Index, Acc) -> lists:reverse(Acc);
 make_jobs([Vector | Vectors], Index, Acc) ->
     Job = #ct_job{ name = make_name(Vector)
-                 , tree = Vector
+                 , vectors = Vector
                  , index = Index
                  },
 	make_jobs(Vectors, Index + 1, [Job | Acc]).
@@ -147,6 +149,7 @@ enum_dimentions([Row | Rows], Vectors) ->
     NewVec = [[Col | Vector] || Vector <- Vectors, Col <- Row],
     enum_dimentions(Rows, NewVec).
 
+
 ct_master_orchestration(_FuncExists, Suite, Config) ->
 	JobsConfig = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
 	Jobs = proplists:get_value( all_jobs, JobsConfig ),
@@ -166,6 +169,10 @@ ct_master_orchestration(_FuncExists, Suite, Config) ->
 generate_specfile(SuiteModule, Jobs) ->
 	BaseDir = jobs_dir(),
 	LogDir = dir(BaseDir, "logs"),
+	
+	MasterIndex = "<a href='file:///"++LogDir++"/index.html'>Index</a>",
+	ct:log("Master Log Index ~n~p", [ MasterIndex ]),
+	
 	SuiteDir = suite_dir(SuiteModule),
 	ChildNodes = generate_child_nodes(Jobs, SuiteModule),
 	SpecFilename = spec_filename(SuiteModule, BaseDir),
@@ -187,15 +194,14 @@ generate_child_nodes(Jobs, SuiteModule) ->
 
 child_node_spec(#ct_job{name = Name} = Job, SuiteModule) ->
 	Node = node_name(Name),
-	%% Starting Job Deps to allow Options to include Dep runtime info ( i.e. Docker Networking )
-	SuiteModule:?INIT_PER_JOB(Job),
 	Options = options(Job, SuiteModule),
 	[<<"{node,">>, Name, <<",'">>, Node, <<"'}.\n">>,
 	 <<"{init,">>, Name, <<",[{node_start,">>, Options, <<"}]}.\n">>].
 
 options(Job, SuiteModule) ->
 	Opts = SuiteModule:job_options(Job),
-	CodePaths = {startup_functions, [{code, add_paths, [code:get_path()]}]},
+	CodePaths = {startup_functions, [{code, add_paths, [code:get_path()]},
+	                                 {SuiteModule, ?INIT_PER_JOB, [Job] }]},
 	OptsUpdated = [{monitor_master, true}, CodePaths | Opts],
 	OptsStr = io_lib:format("~1p", [OptsUpdated]),
 	list_to_binary(lists:flatten(OptsStr)).
@@ -277,16 +283,20 @@ update_error(Errors, Type, JobName, Info) -> [{Type, JobName, Info} | Errors].
 override_function(FuncExists, Suite, Name, Default) ->
 	override_function(FuncExists, Suite, Name, [], Default).
 
-override_function(true, Suite, Name, Args, _Default) ->
+override_function(true, Suite, Name, Args, Default) ->
+	override_function(true, Suite, Name, Args, Default, fun(_T,_E,_S) -> ok end ).
+
+override_function(true, Suite, Name, Args, _Default, OnExceptionHook) ->
 	OverrideFunction = emqx_ct_jobs_suite_transform:intl_function_name(Name),
 	try apply(Suite, OverrideFunction, Args) of
 		Success -> Success
 	catch
-		_Type:Exception:Stack ->
+		Type:Exception:Stack ->
+			OnExceptionHook( Type, Exception, Stack ),
 			io:format("~n Exception : ~p ", [Exception]),
 			exit(Exception, Stack)
 	end;
-override_function(_DoesNotExist, _Suite, _Name, _Args, Default) ->
+override_function(_DoesNotExist, _Suite, _Name, _Args, Default, _OnException) ->
 	Default.
 
 %% -------------------------------------------------------------------------------------------------
@@ -336,10 +346,16 @@ test_platform_host() ->
 %%  Helpers
 %% =================================================================================================
 
+on_init_per_suite_failure( Suite, Config) ->
+	fun( Type, Exception, _Stack ) ->
+		ConfigUpdated = [ { abandoned, { Type, Exception }} | Config ],
+		intl_end_per_job(Suite, ConfigUpdated)
+	end.
+
 intl_end_per_job(Suite, Config) ->
 	JobsConfig = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
 	Job = proplists:get_value( job, JobsConfig ),
-	Suite:?END_PER_JOB(Job, Config).
+	Suite:?END_PER_JOB(Job, Config ).
 
 %% -------------------------------------------------------------------------------------------------
 %%  Eunit
