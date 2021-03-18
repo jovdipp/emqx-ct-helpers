@@ -283,8 +283,8 @@ update_error(Errors, Type, JobName, Info) -> [{Type, JobName, Info} | Errors].
 override_function(FuncExists, Suite, Name, Default) ->
 	override_function(FuncExists, Suite, Name, [], Default).
 
-override_function(true, Suite, Name, Args, Default) ->
-	override_function(true, Suite, Name, Args, Default, fun(_T,_E,_S) -> ok end ).
+override_function(FuncExists, Suite, Name, Args, Default) ->
+	override_function(FuncExists, Suite, Name, Args, Default, fun(_T,_E,_S) -> ok end ).
 
 override_function(true, Suite, Name, Args, _Default, OnExceptionHook) ->
 	OverrideFunction = emqx_ct_jobs_suite_transform:intl_function_name(Name),
