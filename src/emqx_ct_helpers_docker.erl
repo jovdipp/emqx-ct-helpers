@@ -16,7 +16,7 @@
 
 -module(emqx_ct_helpers_docker).
 
--export([docker_ip/2, compose/5, stop/1, remove/1]).
+-export([docker_ip/2, compose/5, stop/1, remove/1, force_remove/1]).
 
 docker_ip( ContainerName, ipv4 ) ->
     inspect_network( ContainerName, ".IPAddress" );
@@ -45,6 +45,9 @@ stop(ContainerName) ->
 remove(ContainerName) ->
     sh("docker rm " ++ ContainerName).
 
+force_remove(ContainerName) ->
+    sh("docker rm -f " ++ ContainerName).
+
 set_env_file(Env) ->
     { ok, CWD } = file:get_cwd(),
     Unique = erlang:unique_integer()*-1,
@@ -54,7 +57,8 @@ set_env_file(Env) ->
     { ok, Path }.
 
 sh(Cmd) ->
-    Port = open_port({spawn, Cmd}, [ use_stdio, stderr_to_stdout, eof, hide, exit_status, { parallelism, true } ]),
+    Options = [ use_stdio, stderr_to_stdout, eof, hide, exit_status, { parallelism, true } ],
+    Port = open_port({spawn, Cmd}, Options),
     get_data(Port, []).
 
 get_data(Port, Sofar) ->
