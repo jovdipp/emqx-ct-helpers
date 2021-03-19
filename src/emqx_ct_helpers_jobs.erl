@@ -117,7 +117,7 @@ matrix_jobs(Matrix) ->
 	matrix_into_jobs(Matrix).
 
 matrix_into_jobs(Matrix) ->
-	Vectors = enum_dimentions(Matrix),
+	Vectors = enum_dimensions(Matrix),
 	make_jobs(Vectors).
 
 make_jobs(Vectors) ->
@@ -140,14 +140,14 @@ infix([H | T], In) -> [H, In | infix(T, In)].
 %% enumerate all dimentions of a matrix
 %% sample  input: [[a,b], [1], [x,y,z]]
 %% sample output: [[a,1,x],[a,1,y],[a,1,z],[b,1,x],[b,1,y],[b,1,z]]
-enum_dimentions(Matrix) ->
-    enum_dimentions(Matrix, [[]]).
+enum_dimensions(Matrix) ->
+	enum_dimensions(Matrix, [[]]).
 
-enum_dimentions([], Vectors) ->
+enum_dimensions([], Vectors) ->
     lists:map(fun lists:reverse/1, Vectors);
-enum_dimentions([Row | Rows], Vectors) ->
+enum_dimensions([Row | Rows], Vectors) ->
     NewVec = [[Col | Vector] || Vector <- Vectors, Col <- Row],
-    enum_dimentions(Rows, NewVec).
+	enum_dimensions(Rows, NewVec).
 
 
 ct_master_orchestration(_FuncExists, Suite, Config) ->
@@ -364,17 +364,17 @@ intl_end_per_job(Suite, Config) ->
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
-enum_dimentions_1_test() ->
-    ?assertEqual([[a], [b]], enum_dimentions([[a, b]])).
+enum_dimensions_1_test() ->
+    ?assertEqual([[a], [b]], enum_dimensions([[a, b]])).
 
-enum_dimentions_test() ->
+enum_dimensions_test() ->
     Matrix = [[a, b], [1], [x, y, z]],
     ?assertEqual([[a, 1, x],
                   [a, 1, y],
                   [a, 1, z],
                   [b, 1, x],
                   [b, 1, y],
-                  [b,1,z]], enum_dimentions(Matrix)).
+                  [b,1,z]], enum_dimensions(Matrix)).
 
 make_name_test_() ->
     [ {"one atom", ?_assertEqual(<<"a">>, make_name([a]))}
