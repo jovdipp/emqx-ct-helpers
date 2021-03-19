@@ -82,8 +82,9 @@
 	ConfigUpdated = [ { ?JOBS_MATRIX_CONFIG, JobsConfig } | Config ],
 	case is_job_node() of
 		true ->
-			Hook = on_init_per_suite_failure(Suite, Config),
-			override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], Config, Hook);
+			Hook = on_init_per_suite_failure(Suite, ConfigUpdated),
+			override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], ConfigUpdated, 
+			                  Hook);
 		false -> ConfigUpdated
 	end.
 
