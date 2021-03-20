@@ -66,9 +66,15 @@ start_apps(Apps) ->
 start_apps(Apps, Handler) when is_function(Handler) ->
     %% Load all application code to beam vm first
     %% Because, minirest, ekka etc.. application will scan these modules
-    [application:load(App) || App <- Apps],
-    [start_app(App, Handler) || App <- [emqx | Apps]],
-    ok.
+    lists:foreach(fun load/1, Apps),
+    lists:foreach(fun(App) -> start_app(App, Handler) end, [emqx | Apps]).
+
+load(App) ->
+    case application:load(App) of
+        ok -> ok;
+        {error, {already_loaded, _}} -> ok;
+        {error, Reason} -> error({failed_to_load_app, App, Reason})
+    end.
 
 start_app(App, Handler) ->
     start_app(App,
@@ -88,7 +94,10 @@ start_app(App, SchemaFile, ConfigFile, SpecAppConfig) ->
     RenderedConfigFile = render_config_file(ConfigFile, Vars),
     read_schema_configs(SchemaFile, RenderedConfigFile),
     SpecAppConfig(App),
-    {ok, _} = application:ensure_all_started(App).
+    case application:ensure_all_started(App) of
+        {ok, _} -> ok;
+        {error, Reason} -> error({failed_to_start_app, App, Reason})
+    end.
 
 render_config_file(ConfigFile, Vars0) ->
     {ok, Temp} = file:read_file(ConfigFile),
