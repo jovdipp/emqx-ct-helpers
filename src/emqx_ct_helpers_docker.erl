@@ -16,7 +16,15 @@
 
 -module(emqx_ct_helpers_docker).
 
--export([docker_ip/2, compose/5, stop/1, remove/1, force_remove/1]).
+-export([ docker_ip/2
+         ,compose/5
+         ,stop/1
+         ,remove/1
+         ,remove/2
+         ,remove/3
+         ,force_remove/1
+         ,force_remove/2
+        ]).
 
 docker_ip( ContainerName, ipv4 ) ->
     inspect_network( ContainerName, ".IPAddress" );
@@ -42,11 +50,21 @@ compose( File, Project_name, ServiceName, Args, Env ) ->
 stop(ContainerName) ->
     sh("docker stop " ++ ContainerName).
 
-remove(ContainerName) ->
-    sh("docker rm " ++ ContainerName).
+remove(ContainerName) -> remove(ContainerName, false).
 
-force_remove(ContainerName) ->
-    sh("docker rm -f " ++ ContainerName).
+remove(ContainerName, RemoveVolume) -> remove(ContainerName, RemoveVolume, false).
+
+remove(ContainerName, RemoveVolume, true ) -> remove(ContainerName, RemoveVolume, " -f ");
+remove(ContainerName, RemoveVolume, false) -> remove(ContainerName, RemoveVolume, "");
+remove(ContainerName, true,         Force) -> remove(ContainerName, " -v ", Force);
+remove(ContainerName, false,        Force) -> remove(ContainerName, "", Force);
+remove(ContainerName, RemoveVolume, Force) when is_list(RemoveVolume), is_list(Force) ->
+    sh("docker rm " ++ RemoveVolume ++ Force ++ ContainerName).
+
+
+force_remove(ContainerName) -> remove(ContainerName, false, true).
+
+force_remove(ContainerName, RemoveVolume) -> remove(ContainerName, RemoveVolume, true).
 
 set_env_file(Env) ->
     { ok, CWD } = file:get_cwd(),

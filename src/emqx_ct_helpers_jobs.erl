@@ -83,7 +83,7 @@
 	case is_job_node() of
 		true ->
 			Hook = on_init_per_suite_failure(Suite, ConfigUpdated),
-			override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], ConfigUpdated, 
+			override_function(FuncExists, Suite, ?CT_INIT_PER_SUITE, [ConfigUpdated], ConfigUpdated,
 			                  Hook);
 		false -> ConfigUpdated
 	end.
