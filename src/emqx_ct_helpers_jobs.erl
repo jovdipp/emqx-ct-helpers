@@ -208,9 +208,18 @@ options(Job, SuiteModule) ->
 	list_to_binary(lists:flatten(OptsStr)).
 
 node_name(Name) ->
-	Localhost = net_adm:localhost(),
+	Localhost = gethostname(),
 	Hostname = list_to_binary(Localhost),
 	<<?JOBS_NODE_PREFIX/binary, Name/binary, "@", Hostname/binary>>.
+
+gethostname() ->
+	gethostname(net_kernel:longnames()).
+
+gethostname(true) ->
+	net_adm:localhost();
+gethostname(_) ->
+	{ok, Name}=inet:gethostname(),
+	Name.
 
 jobs_dir() ->
 	{ok, CWD} = file:get_cwd(),
