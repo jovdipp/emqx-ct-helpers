@@ -138,7 +138,7 @@ make_name(Atoms) ->
 infix([I], _) -> [I];
 infix([H | T], In) -> [H, In | infix(T, In)].
 
-%% enumerate all dimentions of a matrix
+%% enumerate all dimensions of a matrix
 %% sample  input: [[a,b], [1], [x,y,z]]
 %% sample output: [[a,1,x],[a,1,y],[a,1,z],[b,1,x],[b,1,y],[b,1,z]]
 enum_dimensions(Matrix) ->
