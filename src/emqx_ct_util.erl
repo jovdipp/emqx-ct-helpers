@@ -33,6 +33,4 @@ get_platform_root_dir(ModPath) ->
     end.
 
 where_ami(Module) ->
-    File = atom_to_list(Module) ++ ".beam",
-    CWPath = code:where_is_file(File),
-    filename:dirname(CWPath).
+    filename:dirname(code:which(Module)).
