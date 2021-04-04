@@ -43,10 +43,10 @@ get_matrix(SuiteStr) ->
     Suite = list_to_atom(SuiteStr),
     Matrix = Suite:job_matrix(),
     Jobs = emqx_ct_helpers_jobs:matrix_jobs(Matrix),
-    JsonJobs = jobs_to_json(Jobs),
+    JsonJobs = jobs_to_json_structs(Jobs),
     jiffy:encode(JsonJobs).
 
-jobs_to_json(Jobs) ->
+jobs_to_json_structs(Jobs) ->
     [ job_to_struct(Job) || Job <- Jobs ].
 
 %% explicitly extracting fields to ensure future ct_job field changes
