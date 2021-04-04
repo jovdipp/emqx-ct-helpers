@@ -28,8 +28,11 @@ main([ Cmd | Args ]) ->
     io:format(JsonStr),
     erlang:halt().
 
-cmd("get-matrix", [ SuiteStr | _Args ]) -> get_matrix(SuiteStr);
-cmd(_cmd, _Args) -> erlang:halt(unknown_command).
+cmd("get-matrix", [ SuiteStr | _Args ]) ->
+    get_matrix(SuiteStr);
+cmd(Cmd, _Args) ->
+    io:format("error : unknown command [~p]",[Cmd]),
+    erlang:halt(1).
 
 ensure_code_paths() ->
     PlatformRoot = emqx_ct_util:get_platform_root_dir(),
