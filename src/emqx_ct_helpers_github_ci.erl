@@ -16,7 +16,7 @@
 
 -module(emqx_ct_helpers_github_ci).
 
--include_lib("../include/emqx_ct_job.hrl").
+-include("emqx_ct_job.hrl").
 
 %% API
 -export([main/1]).

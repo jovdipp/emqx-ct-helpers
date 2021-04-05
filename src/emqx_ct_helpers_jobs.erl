@@ -32,14 +32,24 @@
 -define(SUCCESSFUL, successful).
 -define(ERROR_TYPE_FAILED_TEST, failed_tests).
 -define(JOBS_NODE_PREFIX, <<"job-matrix-test-node-">>).
-
+-define(EMQX_CT_MATRIX_OVERRIDE, "EMQX_CT_MATRIX_OVERRIDE").
 
 %% -------------------------------------------------------------------------------------------------
 %%  Forwarded Functions ( Macro used to keep in sync with emqx_ct_jobs_suite_transform )
 %% =================================================================================================
 
 ?JOB_MATRIX(FuncExists, Suite) ->
-	override_function(FuncExists, Suite, ?JOB_MATRIX, []).
+	Override = os:getenv(?EMQX_CT_MATRIX_OVERRIDE),
+	case Override of
+		false ->
+			override_function(FuncExists, Suite, ?JOB_MATRIX, []);
+		MatrixStr ->
+			MatrixStrDotted = ensure_dot(MatrixStr),
+			{ok, Scanned, _} = erl_scan:string(MatrixStrDotted),
+			{ok, Parsed} = erl_parse:parse_exprs(Scanned),
+			{value, Value, _NewBindings} = erl_eval:exprs(Parsed, []),
+			Value
+	end.
 
 ?INIT_PER_JOB(FuncExists, Suite, Job) ->
 	override_function(FuncExists, Suite, ?INIT_PER_JOB, [Job], ok).
@@ -161,6 +171,12 @@ ct_master_orchestration(_FuncExists, Suite, Config) ->
 			exit({failed_tests, Errors});
 		{ok, successful} ->
 			{ok, successful}
+	end.
+
+ensure_dot(MatrixStr) ->
+	case lists:last(MatrixStr) of
+		$. -> MatrixStr;
+		_other -> MatrixStr++"."
 	end.
 
 %% -------------------------------------------------------------------------------------------------
@@ -373,6 +389,7 @@ intl_end_per_job(Suite, Config) ->
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+-include("../test/emqx_jobs_SUITE.hrl").
 
 enum_dimensions_1_test() ->
     ?assertEqual([[a], [b]], enum_dimensions([[a, b]])).
@@ -391,5 +408,15 @@ make_name_test_() ->
     , {"tow atoms", ?_assertEqual(<<"a_b">>, make_name([a,b]))}
     , {"three atoms", ?_assertEqual(<<"a_b_c">>, make_name([a,b,c]))}
     ].
+
+job_matrix_override_test() ->
+	[ [ ?JOB_MYSQLV8, ?JOB_MYSQLV5_7 ],
+	  [ ?JOB_TLS, ?JOB_TCP ],
+	  [ ?JOB_IPV4, ?JOB_IPV6 ] ] = ?JOB_MATRIX(true, emqx_jobs_SUITE),
+	MatrixStr = "[[mysql_vsn_5],[tls],[ip4,ip6]]",
+	os:set_env_var(?EMQX_CT_MATRIX_OVERRIDE, MatrixStr),
+	MatrixOverride = [[mysql_vsn_5],[tls],[ip4,ip6]],
+	MatrixOverride = ?JOB_MATRIX(true,emqx_jobs_SUITE),
+	ok.
 
 -endif.

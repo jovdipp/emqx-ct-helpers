@@ -22,14 +22,9 @@
 -compile([{parse_transform, emqx_ct_jobs_suite_transform}]).
 
 -include("emqx_ct_job.hrl").
+-include("emqx_jobs_SUITE.hrl").
 -include_lib("common_test/include/ct.hrl").
 
--define(JOB_MYSQLV8, mysqlV8).
--define(JOB_MYSQLV5_7, mysqlV5_7).
--define(JOB_TCP, tcp).
--define(JOB_TLS, tls).
--define(JOB_IPV4, ipv4).
--define(JOB_IPV6, ipv6).
 
 all() ->
     [t_test_running_in_each_job].
