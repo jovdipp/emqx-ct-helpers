@@ -45,10 +45,7 @@
 			override_function(FuncExists, Suite, ?JOB_MATRIX, []);
 		MatrixStr ->
 			MatrixStrDotted = ensure_dot(MatrixStr),
-			{ok, Scanned, _} = erl_scan:string(MatrixStrDotted),
-			{ok, Parsed} = erl_parse:parse_exprs(Scanned),
-			{value, Value, _NewBindings} = erl_eval:exprs(Parsed, []),
-			Value
+			parse_matrix(MatrixStrDotted)
 	end.
 
 ?INIT_PER_JOB(FuncExists, Suite, Job) ->
@@ -178,6 +175,16 @@ ensure_dot(MatrixStr) ->
 		$. -> MatrixStr;
 		_other -> MatrixStr++"."
 	end.
+
+
+parse_matrix(MatrixStrDotted) ->
+	{ok, Scanned, _} = erl_scan:string(MatrixStrDotted),
+	{ok, Parsed} = erl_parse:parse_exprs(Scanned),
+	{value, Value, _NewBindings} = erl_eval:exprs(Parsed, []),
+	[ transform_vector(Vector) || Vector <- Value ].
+
+transform_vector([Num | _]=Item) when is_integer(Num) -> [list_to_atom(Item)];
+transform_vector(Item) -> Item.
 
 %% -------------------------------------------------------------------------------------------------
 %%  Job Generation
@@ -416,6 +423,13 @@ job_matrix_override_test() ->
 	MatrixStr = "[[mysql_vsn_5],[tls],[ip4,ip6]]",
 	os:set_env_var(?EMQX_CT_MATRIX_OVERRIDE, MatrixStr),
 	MatrixOverride = [[mysql_vsn_5],[tls],[ip4,ip6]],
+	MatrixOverride = ?JOB_MATRIX(true,emqx_jobs_SUITE),
+	ok.
+
+job_matrix_override_json_vector_test() ->
+	MatrixStr = "[\"mysql_vsn_5\",\"tls\",\"ip4\"]",
+	os:set_env_var(?EMQX_CT_MATRIX_OVERRIDE, MatrixStr),
+	MatrixOverride = [[mysql_vsn_5],[tls],[ip4]],
 	MatrixOverride = ?JOB_MATRIX(true,emqx_jobs_SUITE),
 	ok.
 
