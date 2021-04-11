@@ -116,7 +116,6 @@
 		false -> ok
 	end.
 
-
 %% -------------------------------------------------------------------------------------------------
 %%  Matrix
 %% =================================================================================================
@@ -157,7 +156,6 @@ enum_dimensions([Row | Rows], Vectors) ->
     NewVec = [[Col | Vector] || Vector <- Vectors, Col <- Row],
 	enum_dimensions(Rows, NewVec).
 
-
 ct_master_orchestration(_FuncExists, Suite, Config) ->
 	JobsConfig = proplists:get_value( ?JOBS_MATRIX_CONFIG, Config ),
 	Jobs = proplists:get_value( all_jobs, JobsConfig ),
@@ -175,7 +173,6 @@ ensure_dot(MatrixStr) ->
 		$. -> MatrixStr;
 		_other -> MatrixStr++"."
 	end.
-
 
 parse_matrix(MatrixStrDotted) ->
 	{ok, Scanned, _} = erl_scan:string(MatrixStrDotted),
@@ -431,6 +428,7 @@ job_matrix_override_json_vector_test() ->
 	os:set_env_var(?EMQX_CT_MATRIX_OVERRIDE, MatrixStr),
 	MatrixOverride = [[mysql_vsn_5],[tls],[ip4]],
 	MatrixOverride = ?JOB_MATRIX(true,emqx_jobs_SUITE),
+	?assertEqual([[mysql_vsn_5,tls,ip4]], enum_dimensions(MatrixOverride)),
 	ok.
 
 -endif.

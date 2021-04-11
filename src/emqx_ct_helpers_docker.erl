@@ -32,8 +32,7 @@ docker_ip( ContainerName, ipv6 ) ->
     inspect_network( ContainerName, ".GlobalIPv6Address").
 
 inspect_network( ContainerName, Item ) ->
-    Response = inspect( ContainerName, "{{range.NetworkSettings.Networks}}{{"++Item++"}}{{end}}" ),
-    { ok, Response }.
+    inspect( ContainerName, "{{range.NetworkSettings.Networks}}{{"++Item++"}}{{end}}" ).
 
 inspect( ContainerName, Inspection ) ->
     docker("inspect -f "++Inspection++" "++ContainerName).
@@ -77,7 +76,13 @@ set_env_file(Env) ->
 sh(Cmd) ->
     Options = [ use_stdio, stderr_to_stdout, eof, hide, exit_status, { parallelism, true } ],
     Port = open_port({spawn, Cmd}, Options),
-    get_data(Port, []).
+    case get_data(Port, []) of
+        {0, Output} ->
+            OutputTrimmed = string:trim(Output),
+            {ok, OutputTrimmed};
+        {Code, Output} ->
+            {error, {Code, Output}}
+    end.
 
 get_data(Port, Sofar) ->
     receive
